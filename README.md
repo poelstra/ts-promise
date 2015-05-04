@@ -1,13 +1,10 @@
-# TS-Promise
-
-[![Build Status](https://travis-ci.org/poelstra/ts-promise.svg)](https://travis-ci.org/poelstra/ts-promise)
-[![Coverage Status](https://coveralls.io/repos/poelstra/ts-promise/badge.svg)](https://coveralls.io/r/poelstra/ts-promise)
-
 <a href="https://promisesaplus.com/">
 	<img src="https://promisesaplus.com/assets/logo-small.png"
 		alt="Promises/A+ logo"
 		title="Promises/A+ 1.1 compliant" align="right" />
 </a>
+[![Build Status](https://travis-ci.org/poelstra/ts-promise.svg)](https://travis-ci.org/poelstra/ts-promise)
+[![Coverage Status](https://coveralls.io/repos/poelstra/ts-promise/badge.svg)](https://coveralls.io/r/poelstra/ts-promise)
 
 # Introduction
 
