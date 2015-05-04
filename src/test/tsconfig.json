@@ -1,0 +1,25 @@
+{
+    "version": "1.4.1",
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "declaration": true,
+        "noImplicitAny": true,
+        "removeComments": false,
+        "sourceMap": true,
+        "outDir": "../../dist/",
+        "noLib": false
+    },
+    "filesGlob": [
+        "./**/*.ts",
+        "!./node_modules/**/*.ts"
+    ],
+    "files": [
+        "./test-BaseError.ts",
+        "./test-Promise.ts",
+        "./test-Stack.ts",
+        "./test-Trace.ts",
+        "./test-aplus.ts",
+        "./test-utils.ts"
+    ]
+}

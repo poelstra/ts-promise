@@ -1,0 +1,26 @@
+{
+    "version": "1.4.1",
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "declaration": true,
+        "noImplicitAny": true,
+        "removeComments": false,
+        "sourceMap": true,
+        "outDir": "../../dist/lib/",
+        "noLib": false
+    },
+    "filesGlob": [
+        "./**/*.ts",
+        "!./node_modules/**/*.ts"
+    ],
+    "files": [
+        "./BaseError.ts",
+        "./Promise.ts",
+        "./Stack.ts",
+        "./Trace.ts",
+        "./async.ts",
+        "./index.ts",
+        "./util.ts"
+    ]
+}
