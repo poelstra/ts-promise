@@ -59,7 +59,7 @@ export class Async {
 	private _flusher: () => void = (): void => this._scheduledFlush();
 	private _flushing = false;
 	private _scheduled = false;
-	private _scheduler: (callback: () => void) => void = setImmediate;
+	private _scheduler: (callback: () => void) => void = null;
 
 	setScheduler(scheduler: (callback: () => void) => void): void {
 		assert(typeof scheduler === "function");
@@ -68,7 +68,11 @@ export class Async {
 
 	schedule(): void {
 		if (!this._scheduled) {
-			this._scheduler(this._flusher);
+			// Note: we 'fall back' to setImmediate here (instead of e.g.
+			// assigning it to the _scheduler property once), to allow
+			// setImmediate to be e.g. replaced by a mocked one (e.g. Sinon's
+			// useFakeTimers())
+			(this._scheduler || setImmediate)(this._flusher);
 			this._scheduled = true;
 		}
 	}
