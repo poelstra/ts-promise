@@ -11,10 +11,10 @@
 TS-Promise is a fast, robust, type-safe promise library.
 
 Features:
-- Promises A+ 1.1 compliant
+- Promises/A+ 1.1 compliant
 - ES6 Promise interface compatible
 - Long stack traces support (switchable at runtime!)
-- Very fast
+- [Very fast](https://github.com/poelstra/ts-promise-benchmark)
 - Efficiently supports infinite recursion (with and without long stack traces)
 - Immediate unhandled rejection handling through `.done()` (i.e. throws an error
   before handling `.then()`'s from other promises)
@@ -137,7 +137,8 @@ Static methods on Promise:
 - `static setLongTraces(enable: boolean): void`
   Enable or disable long stack trace support. See Example in README. Can be
   enabled and disabled at runtime, and 'traced' and 'untraced' promises can be
-  mixed freely.
+  mixed freely. Disabled by default, as it does incur both a performance and
+  memory overhead.
 - `static flush(): void`
   Recursively flush the async callback queue until all `.then()` and `.done()`
   callbacks for fulfilled and rejected Promises have been called.
@@ -168,6 +169,7 @@ Methods on Promise instances:
 Planned features:
 - Synchronous inspection
 - `.promisify()`
+- Missing ES6 method `race<R>(promises: (R | Thenable<R>)[]): Promise<R>`
 - Possibly-unhandled-rejection detection
 - Possibly-unterminated-promise-chain detection
 - Differentiating between programmer errors (e.g. assertions, null derefences)
@@ -176,9 +178,16 @@ Planned features:
 - Non-V8-support (should mainly be longStackTraces stuff)
 - UMD support?
 - Split off async callback queue and stack trace handling into separate packages
-- Helpers like `.delay()`
 - 100% test coverage, even simpler code
 - Better (and automated) documentation
+
+# Changelog
+
+0.1.1:
+- Transparent support for mocked timers (e.g. Sinon.useFakeTimers())
+
+0.1.0:
+- Initial version
 
 # License
 
