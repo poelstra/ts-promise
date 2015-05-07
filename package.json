@@ -23,7 +23,7 @@
     "mocha": "mocha -R spec dist/test/test-*.js",
     "cover": "istanbul cover _mocha -- -R spec dist/test/test-*.js",
     "lint": "node support/tslint_wrapper.js src/**.ts",
-    "build:src": "cd src/lib && tsc && dts-generator --name ts-promise --baseDir . --out ../../dist/ts-promise.d.ts --main ts-promise/index index.ts",
+    "build:src": "cd src/lib && tsc && dts-generator --name ts-promise --baseDir . --out ../../dist/ts-promise.d.ts index.ts && echo declare module \\'ts-promise\\' {\\\\n\\\\texport \\* from \\'ts-promise/index\\'\\;\\\\n\\\\texport { default } from \\'ts-promise/index\\'\\;\\\\n} >> ../../dist/ts-promise.d.ts",
     "watch:src": "cd src/lib && tsc --watch",
     "build:test": "cd src/test && tsc",
     "watch:test": "cd src/test && tsc --watch",
