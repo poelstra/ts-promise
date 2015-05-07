@@ -14,7 +14,7 @@ Features:
 - Promises/A+ 1.1 compliant
 - ES6 Promise interface compatible
 - Long stack traces support (switchable at runtime!)
-- [Very fast](https://github.com/poelstra/ts-promise-benchmark)
+- [Fast](https://github.com/poelstra/ts-promise-benchmark)
 - Efficiently supports infinite recursion (with and without long stack traces)
 - Immediate unhandled rejection handling through `.done()` (i.e. throws an error
   before handling `.then()`'s from other promises)
@@ -138,7 +138,7 @@ Static methods on Promise:
   Enable or disable long stack trace support. See Example in README. Can be
   enabled and disabled at runtime, and 'traced' and 'untraced' promises can be
   mixed freely. Disabled by default, as it does incur both a performance and
-  memory overhead.
+  memory overhead (though still about twice as fast as Q without long traces...).
 - `static flush(): void`
   Recursively flush the async callback queue until all `.then()` and `.done()`
   callbacks for fulfilled and rejected Promises have been called.
@@ -166,8 +166,9 @@ Methods on Promise instances:
 
 # TODO
 
-Planned features:
+Planned features (in fairly arbitrary order):
 - Synchronous inspection
+- Deferred (i.e. an object with resolve, reject functions and a promise)
 - `.promisify()`
 - Missing ES6 method `race<R>(promises: (R | Thenable<R>)[]): Promise<R>`
 - Possibly-unhandled-rejection detection
@@ -180,6 +181,18 @@ Planned features:
 - Split off async callback queue and stack trace handling into separate packages
 - 100% test coverage, even simpler code
 - Better (and automated) documentation
+
+# Development
+
+Found an issue? Have an idea? Wanna help? Submit an issue!
+
+```
+git clone https://github.com/poelstra/ts-promise
+cd ts-promise
+npm install
+# hack hack, code code...
+npm run prepublish
+```
 
 # Changelog
 
