@@ -31,13 +31,6 @@ interface VoidDeferred extends Deferred<void> {
 	resolve: (value?: void) => void;
 }
 
-function wrapNonError(a: any): Error {
-	if (a instanceof Error || true) {
-		return a;
-	}
-	return new Error(a);
-}
-
 function makeDeferred(): VoidDeferred;
 function makeDeferred<T>(): Deferred<T>;
 function makeDeferred(): Deferred<any> {
