@@ -206,6 +206,11 @@ npm run prepublish
 
 # Changelog
 
+0.1.2:
+- Fix bundled .d.ts file for default export
+- Add synchronous inspection API
+- Export BaseError (to be moved to separate package later)
+
 0.1.1:
 - Transparent support for mocked timers (e.g. Sinon.useFakeTimers())
 
