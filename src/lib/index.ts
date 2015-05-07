@@ -8,3 +8,6 @@
 "use strict";
 
 export { default, Promise, Thenable, UnhandledRejectionError } from "./Promise";
+
+// Temporary, should be moved to its own package some day
+export { default as BaseError } from "./BaseError";
