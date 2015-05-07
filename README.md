@@ -163,11 +163,21 @@ Methods on Promise instances:
   chain is a rejected Promise (`.reason` property of the error).
   Note that it is technically safe to 'continue' the program after e.g. catching
   the error through Node's `uncaughtException`, or when running in a browser.
+- `isFulfilled(): boolean`
+  Returns true when promise is fulfilled, false otherwise.
+- `isRejected(): boolean`
+  Returns true when promise is rejected, false otherwise.
+- `isPending(): boolean`
+  Returns true when promise is still pending, false otherwise.
+- `value(): T`
+  Returns fulfillment value if fulfilled, otherwise throws an error.
+- `reason(): any`
+  Returns rejection reason if rejected, otherwise throws an error.
 
 # TODO
 
 Planned features (in fairly arbitrary order):
-- Synchronous inspection
+- ~~Synchronous inspection~~
 - Deferred (i.e. an object with resolve, reject functions and a promise)
 - `.promisify()`
 - Missing ES6 method `race<R>(promises: (R | Thenable<R>)[]): Promise<R>`

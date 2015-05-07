@@ -204,6 +204,32 @@ export class Promise<T> implements Thenable<T> {
 		return this.then(undefined, onRejected);
 	}
 
+	public isFulfilled(): boolean {
+		return this._state === State.Fulfilled;
+	}
+
+	public isRejected(): boolean {
+		return this._state === State.Rejected;
+	}
+
+	public isPending(): boolean {
+		return this._state === State.Pending;
+	}
+
+	public value(): T {
+		if (!this.isFulfilled()) {
+			throw new Error("Promise is not fulfilled");
+		}
+		return this._result;
+	}
+
+	public reason(): any {
+		if (!this.isRejected()) {
+			throw new Error("Promise is not rejected");
+		}
+		return this._result;
+	}
+
 	public static resolve<R>(value: R|Thenable<R>): Promise<R>;
 	public static resolve(): Promise<void>;
 	public static resolve<R>(value?: R|Thenable<R>): Promise<void|R> {
@@ -219,7 +245,7 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	public static all<X>(thenables: (X|Thenable<X>)[]): Promise<X[]> {
-		return new Promise((resolve, reject): void => {
+		return new Promise<X[]>((resolve, reject): void => {
 			assert(Array.isArray(thenables), "thenables must be an Array");
 			if (thenables.length === 0) {
 				resolve([]);

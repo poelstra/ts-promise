@@ -253,6 +253,102 @@ describe("Promise", (): void => {
 		});
 	}); // #done()
 
+	describe("#isFulfilled()", () => {
+		it("is false while pending, true when fulfilled", () => {
+			var d = makeDeferred();
+			expect(d.promise.isFulfilled()).to.equal(false);
+			Promise.flush();
+			expect(d.promise.isFulfilled()).to.equal(false);
+			d.resolve();
+			expect(d.promise.isFulfilled()).to.equal(true);
+			Promise.flush();
+			expect(d.promise.isFulfilled()).to.equal(true);
+		});
+		it("is true when already fulfilled", () => {
+			var p = Promise.resolve();
+			expect(p.isFulfilled()).to.equal(true);
+		});
+		it("is false when rejected", () => {
+			var p = Promise.reject(new Error("boom"));
+			expect(p.isFulfilled()).to.equal(false);
+		});
+	});
+
+	describe("#isRejected()", () => {
+		it("is false while pending, true when rejected", () => {
+			var d = makeDeferred();
+			expect(d.promise.isRejected()).to.equal(false);
+			Promise.flush();
+			expect(d.promise.isRejected()).to.equal(false);
+			d.reject(new Error("boom"));
+			expect(d.promise.isRejected()).to.equal(true);
+			Promise.flush();
+			expect(d.promise.isRejected()).to.equal(true);
+		});
+		it("is true when already rejected", () => {
+			var p = Promise.reject(new Error("boom"));
+			expect(p.isRejected()).to.equal(true);
+		});
+		it("is false when fulfilled", () => {
+			var p = Promise.resolve();
+			expect(p.isRejected()).to.equal(false);
+		});
+	});
+
+	describe("#isPending()", () => {
+		it("is true while pending, false when resolved or rejected", () => {
+			var d1 = makeDeferred();
+			var d2 = makeDeferred();
+			expect(d1.promise.isPending()).to.equal(true);
+			expect(d2.promise.isPending()).to.equal(true);
+			Promise.flush();
+			expect(d1.promise.isPending()).to.equal(true);
+			expect(d2.promise.isPending()).to.equal(true);
+			d1.resolve();
+			d2.reject(new Error("boom"));
+			expect(d1.promise.isPending()).to.equal(false);
+			expect(d2.promise.isPending()).to.equal(false);
+			Promise.flush();
+			expect(d1.promise.isPending()).to.equal(false);
+			expect(d2.promise.isPending()).to.equal(false);
+		});
+		it("is false when already fulfilled", () => {
+			var p = Promise.resolve();
+			expect(p.isPending()).to.equal(false);
+		});
+		it("is false when already rejected", () => {
+			var p = Promise.reject(new Error("boom"));
+			expect(p.isPending()).to.equal(false);
+		});
+	});
+
+	describe("#value()", () => {
+		it("returns value when fulfilled", () => {
+			var p = Promise.resolve(42);
+			Promise.flush();
+			expect(p.value()).to.equal(42);
+		});
+		it("throws an error while pending", () => {
+			var p = makeDeferred().promise;
+			Promise.flush();
+			expect(() => p.value()).to.throw("not fulfilled");
+		});
+	});
+
+	describe("#reason()", () => {
+		it("returns reason when rejected", () => {
+			var e = new Error("boom");
+			var p = Promise.reject(e);
+			Promise.flush();
+			expect(p.reason()).to.equal(e);
+		});
+		it("throws an error while pending", () => {
+			var p = makeDeferred().promise;
+			Promise.flush();
+			expect(() => p.reason()).to.throw("not rejected");
+		});
+	});
+
 	describe("long stack traces", (): void => {
 		before(() => {
 			Promise.setLongTraces(true);
