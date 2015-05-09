@@ -216,6 +216,11 @@ export class Promise<T> implements Thenable<T> {
 		}
 	}
 
+	public then(): Promise<T>;
+	public then<R>(
+		onFulfilled?: (value: T) => R|Thenable<R>,
+		onRejected?: (reason: Error) => R|Thenable<R>
+	): Promise<R>;
 	public then<R>(
 		onFulfilled?: (value: T) => R|Thenable<R>,
 		onRejected?: (reason: Error) => R|Thenable<R>

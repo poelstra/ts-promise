@@ -198,6 +198,17 @@ describe("Promise", (): void => {
 		})
 	});
 
+	describe("#then()", () => {
+		// All other cases already handled by Promise/A+ tests
+		it("ignores no handlers, returns Promise of same type", () => {
+			var result: number;
+			Promise.resolve(42).then().then((v) => {
+				result = v;
+			})
+			Promise.flush();
+			expect(result).to.equal(42);
+		});
+	});
 	describe("#done()", (): void => {
 		it("is silent on already resolved promise", (): void => {
 			Promise.resolve(42).done();
