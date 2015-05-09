@@ -149,7 +149,7 @@ export class Promise<T> implements Thenable<T> {
 	private _id = promiseIdCounter++;
 	private _state: State = State.Pending;
 	private _result: any = undefined; // Can be fulfillment value or rejection reason
-	private _handlers: any[] = undefined;
+	private _handlers: Handler<T,any>[] = undefined;
 	private _trace: Trace = undefined;
 
 	constructor(

@@ -244,11 +244,15 @@ describe("Promise", (): void => {
 			expect(Promise.flush).to.not.throw();
 		});
 		it("should immediately break on thrown error", (): void => {
+			var ready = false;
 			Promise.reject(new Error("boom")).done();
 			Promise.resolve().then((): void => {
-				chai.assert(false, "Shouldn't get here");
+				ready = true;
 			});
 			expect(Promise.flush).to.throw(UnhandledRejectionError);
+			expect(ready).to.be.false;
+			Promise.flush();
+			expect(ready).to.be.true;
 		});
 		it("should immediately break on returned rejection", (): void => {
 			var p = Promise.resolve();
@@ -263,10 +267,6 @@ describe("Promise", (): void => {
 			p.then((): Promise<void> => {
 				return d.promise;
 			}).done();
-			d.promise.then((): void => {
-				console.log("ERROR");
-				chai.assert(false, "Shouldn't get here");
-			});
 			Promise.flush();
 			d.reject(new Error("boom"));
 			expect(Promise.flush).to.throw(UnhandledRejectionError);
