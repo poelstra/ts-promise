@@ -29,6 +29,7 @@ export class UnhandledRejectionError extends BaseError {
 
 	constructor(reason: any) {
 		super("UnhandledRejectionError", "unhandled rejection: " + reason);
+		this.reason = reason;
 	}
 }
 

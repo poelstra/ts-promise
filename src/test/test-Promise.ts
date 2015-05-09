@@ -428,3 +428,18 @@ describe("Promise", (): void => {
 		});
 	}); // tracer
 });
+
+describe("UnhandledRejectionError", () => {
+	describe("constructor()", () => {
+		it("includes reason in message", () => {
+			var e = new Error("boom");
+			var ure = new UnhandledRejectionError(e);
+			expect(ure.message).to.contain("Error: boom");
+		});
+		it("sets its .reason property to the original error", () => {
+			var e = new Error("boom");
+			var ure = new UnhandledRejectionError(e);
+			expect(ure.reason).to.equal(e);
+		});
+	});
+});
