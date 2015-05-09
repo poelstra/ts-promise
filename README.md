@@ -16,8 +16,7 @@ Features:
 - Long stack traces support (switchable at runtime!)
 - [Fast](https://github.com/poelstra/ts-promise-benchmark)
 - Efficiently supports infinite recursion (with and without long stack traces)
-- Immediate unhandled rejection handling through `.done()` (i.e. throws an error
-  before handling `.then()`'s from other promises)
+- Early throwing of unhandled rejections with `.done()`
 - No progression handlers, nor cancellation
 - Optional explicit promise chain flushing, useful for test frameworks
 - Readable code (not too many tricks)
@@ -182,7 +181,6 @@ Methods on Promise instances:
 # TODO
 
 Planned features (in fairly arbitrary order):
-- ~~Synchronous inspection~~
 - `.promisify()`
 - Missing ES6 method `race<R>(promises: (R | Thenable<R>)[]): Promise<R>`
 - Possibly-unhandled-rejection detection
@@ -193,7 +191,8 @@ Planned features (in fairly arbitrary order):
 - Non-V8-support (should mainly be longStackTraces stuff)
 - UMD support?
 - Split off async callback queue and stack trace handling into separate packages
-- 100% test coverage, even simpler code
+- Even simpler code (reduce duplication of 'called'-logic when resolving, maybe
+  slightly simplify async callback queue)
 - Better (and automated) documentation
 
 # Development
@@ -209,6 +208,12 @@ npm run prepublish
 ```
 
 # Changelog
+
+0.1.3:
+- Add Promise.defer()
+- Add stack to BaseError
+- Add rejection reason to UnhandledRejectionError
+- 100% code coverage
 
 0.1.2:
 - Fix bundled .d.ts file for default export
