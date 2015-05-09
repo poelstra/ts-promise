@@ -15,37 +15,9 @@ require("source-map-support").install();
 
 import assert = require("assert");
 import chai = require("chai");
-import { Promise, Thenable, UnhandledRejectionError } from "../lib/Promise";
+import { Promise, Thenable, UnhandledRejectionError, Deferred } from "../lib/Promise";
 
 import expect = chai.expect;
-
-// TODO: Move Deferred to the lib itself some day
-
-interface Deferred<T> {
-	promise: Promise<T>;
-	resolve: (value: T|Thenable<T>) => void;
-	reject: (reason: Error) => void;
-}
-
-interface VoidDeferred extends Deferred<void> {
-	resolve: (value?: void) => void;
-}
-
-function makeDeferred(): VoidDeferred;
-function makeDeferred<T>(): Deferred<T>;
-function makeDeferred(): Deferred<any> {
-	var resolve: (v: any) => void;
-	var reject: (r: Error) => void;
-	var p = new Promise<any>((res, rej): void => {
-		resolve = res;
-		reject = rej;
-	});
-	return {
-		promise: p,
-		resolve: resolve,
-		reject: reject
-	};
-}
 
 describe("Promise", (): void => {
 
@@ -135,8 +107,8 @@ describe("Promise", (): void => {
 			});
 		});
 		it("should resolve with results after all Promises have resolved", (): Promise<any> => {
-			var d1 = makeDeferred<number>();
-			var d2 = makeDeferred<number>();
+			var d1 = Promise.defer<number>();
+			var d2 = Promise.defer<number>();
 			setTimeout(() => d1.resolve(1), 10);
 			setTimeout(() => d2.resolve(2), 20);
 			return Promise.all([d1.promise, d2.promise]).then((results): void => {
@@ -144,8 +116,8 @@ describe("Promise", (): void => {
 			});
 		});
 		it("should reject when one Promise fails", (): Promise<any> => {
-			var d1 = makeDeferred<number>();
-			var d2 = makeDeferred<number>();
+			var d1 = Promise.defer<number>();
+			var d2 = Promise.defer<number>();
 			setTimeout(() => d1.reject(new Error("boom")), 10);
 			setTimeout(() => d2.resolve(2), 20);
 			return Promise.all([d1.promise, d2.promise]).catch((e: Error): void => {
@@ -154,8 +126,8 @@ describe("Promise", (): void => {
 		});
 		it("should recursively resolve Thenables", () => {
 			var results: number[];
-			var d1 = makeDeferred<number>();
-			var d2 = makeDeferred<number>();
+			var d1 = Promise.defer<number>();
+			var d2 = Promise.defer<number>();
 			Promise.all([d1.promise, d2.promise]).then((r) => results = r);
 			d1.resolve(d2.promise);
 			Promise.flush();
@@ -166,7 +138,7 @@ describe("Promise", (): void => {
 		});
 		it("should accept non-Thenables", () => {
 			var results: number[];
-			var d1 = makeDeferred<number>();
+			var d1 = Promise.defer<number>();
 			Promise.all([d1.promise, 2]).then((r) => results = r);
 			Promise.flush();
 			expect(results).to.be.undefined;
@@ -189,13 +161,50 @@ describe("Promise", (): void => {
 		});
 	}); // .all()
 
+	describe(".defer", () => {
+		var d: Deferred<number>;
+		beforeEach(() => {
+			d = Promise.defer<number>();
+		})
+		it("is initially pending", () => {
+			expect(d.promise.isPending()).to.be.true;
+		});
+		it("it can be resolved once", () => {
+			d.resolve(42);
+			d.resolve(1);
+			d.reject(new Error("boom"));
+			Promise.flush();
+			expect(d.promise.value()).to.equal(42);
+		});
+		it("it can be rejected once", () => {
+			var e = new Error("boom");
+			d.reject(e);
+			d.resolve(1);
+			d.reject(new Error("bla"));
+			Promise.flush();
+			expect(d.promise.reason()).to.equal(e);
+		});
+		it("it can be rejected using rejected Thenable", () => {
+			var e = new Error("boom");
+			var d2 = Promise.defer<number>();
+			d.resolve(d2.promise);
+			d.resolve(1);
+			d.reject(new Error("bla"));
+			Promise.flush();
+			expect(d.promise.isPending()).to.be.true;
+			d2.reject(e);
+			Promise.flush();
+			expect(d.promise.reason()).to.equal(e);
+		})
+	});
+
 	describe("#done()", (): void => {
 		it("is silent on already resolved promise", (): void => {
 			Promise.resolve(42).done();
 			expect(Promise.flush).to.not.throw();
 		});
 		it("is silent on later resolved promise", (): void => {
-			var d = makeDeferred<number>();
+			var d = Promise.defer<number>();
 			d.promise.done();
 			d.resolve(42);
 			expect(Promise.flush).to.not.throw();
@@ -238,7 +247,7 @@ describe("Promise", (): void => {
 			expect(Promise.flush).to.throw(UnhandledRejectionError);
 		});
 		it("should immediately break on asynchronously rejected Thenable", (): void => {
-			var d = makeDeferred();
+			var d = Promise.defer();
 			var p = Promise.resolve();
 			p.then((): Promise<void> => {
 				return d.promise;
@@ -255,7 +264,7 @@ describe("Promise", (): void => {
 
 	describe("#isFulfilled()", () => {
 		it("is false while pending, true when fulfilled", () => {
-			var d = makeDeferred();
+			var d = Promise.defer();
 			expect(d.promise.isFulfilled()).to.equal(false);
 			Promise.flush();
 			expect(d.promise.isFulfilled()).to.equal(false);
@@ -276,7 +285,7 @@ describe("Promise", (): void => {
 
 	describe("#isRejected()", () => {
 		it("is false while pending, true when rejected", () => {
-			var d = makeDeferred();
+			var d = Promise.defer();
 			expect(d.promise.isRejected()).to.equal(false);
 			Promise.flush();
 			expect(d.promise.isRejected()).to.equal(false);
@@ -297,8 +306,8 @@ describe("Promise", (): void => {
 
 	describe("#isPending()", () => {
 		it("is true while pending, false when resolved or rejected", () => {
-			var d1 = makeDeferred();
-			var d2 = makeDeferred();
+			var d1 = Promise.defer();
+			var d2 = Promise.defer();
 			expect(d1.promise.isPending()).to.equal(true);
 			expect(d2.promise.isPending()).to.equal(true);
 			Promise.flush();
@@ -329,7 +338,7 @@ describe("Promise", (): void => {
 			expect(p.value()).to.equal(42);
 		});
 		it("throws an error while pending", () => {
-			var p = makeDeferred().promise;
+			var p = Promise.defer().promise;
 			Promise.flush();
 			expect(() => p.value()).to.throw("not fulfilled");
 		});
@@ -343,7 +352,7 @@ describe("Promise", (): void => {
 			expect(p.reason()).to.equal(e);
 		});
 		it("throws an error while pending", () => {
-			var p = makeDeferred().promise;
+			var p = Promise.defer().promise;
 			Promise.flush();
 			expect(() => p.reason()).to.throw("not rejected");
 		});
@@ -417,7 +426,7 @@ describe("Promise", (): void => {
 			Promise.resolve(42).done();
 			Promise.resolve(42).done((v) => {});
 			Promise.resolve(Promise.resolve(42));
-			var d = makeDeferred<number>();
+			var d = Promise.defer<number>();
 			Promise.resolve(d.promise);
 			d.resolve(42);
 			Promise.resolve({ then: (callback: Function) => {

@@ -134,6 +134,11 @@ Static methods on Promise:
   they're not a `Thenable`). If any of the input promises leads to a rejection,
   the output promise is rejected with the reason of the first rejected promise.
   See ES6 Promise spec for details.
+- `static defer<X>(): Deferred<X>`
+  Return an object containing a promise and its corresponding resolve and reject
+  functions. Note: most users will typically want to use the Promise constructor
+  instead, as e.g. thrown errors will then automatically lead to a rejected
+  promise.
 - `static setLongTraces(enable: boolean): void`
   Enable or disable long stack trace support. See Example in README. Can be
   enabled and disabled at runtime, and 'traced' and 'untraced' promises can be
@@ -178,7 +183,6 @@ Methods on Promise instances:
 
 Planned features (in fairly arbitrary order):
 - ~~Synchronous inspection~~
-- Deferred (i.e. an object with resolve, reject functions and a promise)
 - `.promisify()`
 - Missing ES6 method `race<R>(promises: (R | Thenable<R>)[]): Promise<R>`
 - Possibly-unhandled-rejection detection

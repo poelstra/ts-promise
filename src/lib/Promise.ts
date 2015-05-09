@@ -87,6 +87,56 @@ interface Handler<T, R> {
 }
 
 /**
+ * Combination of a promise and its resolve/reject functions.
+ * Created using Promise.defer().
+ *
+ * Note: most cases are better solved using the Promise constructor,
+ * as e.g. exceptions throw will then automatically lead to a rejected promise.
+ */
+export interface Deferred<T> {
+	/**
+	 * Initially unresolved promise, resolved by the resolve or reject
+	 * function on this object.
+	 */
+	promise: Promise<T>;
+	/**
+	 * Resolve corresponding promise.
+	 * The first call to either resolve or reject resolves the promise, any
+	 * other calls are ignored.
+	 * This function is a free function (i.e. not a 'method' on this object).
+	 * Note: resolving with a rejected Thenable leads to a rejected promise.
+	 */
+	resolve: (value: T|Thenable<T>) => void;
+	/**
+	 * Reject corresponding promise.
+	 * The first call to either resolve or reject resolves the promise, any
+	 * other calls are ignored.
+	 * This function is a free function (i.e. not a 'method' on this object).
+	 */
+	reject: (reason: Error) => void;
+}
+
+/**
+ * Combination of a promise and its resolve/reject functions.
+ * Created using Promise.defer().
+ *
+ * Note: most cases are better solved using the Promise constructor,
+ * as e.g. exceptions throw will then automatically lead to a rejected promise.
+ *
+ * Convenience interface that allows calling resolve() without an argument.
+ */
+export interface VoidDeferred extends Deferred<void> {
+	/**
+	 * Resolve corresponding promise.
+	 * The first call to either resolve or reject resolves the promise, any
+	 * other calls are ignored.
+	 * This function is a free function (i.e. not a 'method' on this object).
+	 * Note: resolving with a rejected Thenable leads to a rejected promise.
+	 */
+	resolve: (value?: void) => void;
+}
+
+/**
  * Currently unwrapping promise, while running one of its then-callbacks.
  * Used to set the source of newly created promises.
  * We guarantee that at most one callback of a then() is running at any time.
@@ -271,6 +321,22 @@ export class Promise<T> implements Thenable<T> {
 				);
 			}
 		});
+	}
+
+	public static defer(): VoidDeferred;
+	public static defer<X>(): Deferred<X>;
+	public static defer<X>(): Deferred<any> {
+		var resolve: (v: any) => void;
+		var reject: (r: Error) => void;
+		var p = new Promise<any>((res, rej): void => {
+			resolve = res;
+			reject = rej;
+		});
+		return {
+			promise: p,
+			resolve: resolve,
+			reject: reject
+		};
 	}
 
 	public static setLongTraces(enable: boolean): void {
