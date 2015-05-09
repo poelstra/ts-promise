@@ -11,11 +11,17 @@
 // - test/make it work in non-V8
 // - parse stacks into platform-independent object-arrays
 
+var hasStacks = (typeof (<any>Error).captureStackTrace === "function");
+
 export default class Stack {
 	private stack: string; // Note: name *must* be "stack", without underscore
 
 	constructor(ignoreUntil: Function = Stack) {
-		(<any>Error).captureStackTrace(this, ignoreUntil);
+		if (hasStacks) {
+			(<any>Error).captureStackTrace(this, ignoreUntil);
+		} else {
+			this.stack = "dummy\n<no trace>";
+		}
 	}
 
 	inspect(): string {

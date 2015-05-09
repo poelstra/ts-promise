@@ -43,4 +43,6 @@ describe("Stack", () => {
 		var lines = s.inspect().split("\n");
 		expect(lines[0]).to.contain("at test1 (");
 	});
+
+	it("falls back to dummy trace when not supported"); // Think of way to change hasStacks
 });

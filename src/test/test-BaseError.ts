@@ -34,4 +34,10 @@ describe("BaseError", () => {
 	it("should extend Error", () => {
 		expect(e).to.be.instanceof(Error);
 	});
+
+	it("has a stack trace", () => {
+		expect(typeof e.stack).to.equal("string");
+	});
+
+	it("falls back to dummy trace when not supported"); // Think of way to change hasStacks
 });
