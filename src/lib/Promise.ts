@@ -368,11 +368,10 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	private _resolve(x: T|Thenable<T>): void {
-		if (this._state !== State.Pending) {
-			// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
-			// 2.1.3.1 When rejected, a promise must not transition to any other state.
-			return;
-		}
+		// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
+		// 2.1.3.1 When rejected, a promise must not transition to any other state.
+		assert(this._state === State.Pending);
+
 		if (!x) {
 			// Shortcut for falsy values, most notably void-Promises
 			// 2.3.4: If `x` is not an object or function, fulfill `promise` with `x`
@@ -435,11 +434,9 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	private _fulfill(value: T): void {
-		if (this._state !== State.Pending) {
-			// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
-			// 2.1.3.1 When rejected, a promise must not transition to any other state.
-			return;
-		}
+		// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
+		// 2.1.3.1 When rejected, a promise must not transition to any other state.
+		assert(this._state === State.Pending);
 
 		trace && trace(this, `_fulfill(${typeof value})`);
 		// 2.1.2.2 When fulfilled, a promise must have a value, which must not change.
@@ -449,11 +446,9 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	private _reject(reason: Error): void {
-		if (this._state !== State.Pending) {
-			// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
-			// 2.1.3.1 When rejected, a promise must not transition to any other state.
-			return;
-		}
+		// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
+		// 2.1.3.1 When rejected, a promise must not transition to any other state.
+		assert(this._state === State.Pending);
 
 		trace && trace(this, `_reject(${reason})`);
 		// 2.1.3.2 When rejected, a promise must have a reason, which must not change.
@@ -472,22 +467,18 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	private _followPromise(slave: Promise<any>): void {
-		if (this._state !== State.Pending) {
-			// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
-			// 2.1.3.1 When rejected, a promise must not transition to any other state.
-			return;
-		}
+		// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
+		// 2.1.3.1 When rejected, a promise must not transition to any other state.
+		assert(this._state === State.Pending);
 
 		trace && trace(this, `_follow([Promise ${slave._id}])`);
 		slave._enqueue(this, undefined, undefined);
 	}
 
 	private _followThenable(slave: Thenable<any>, then: Function): void {
-		if (this._state !== State.Pending) {
-			// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
-			// 2.1.3.1 When rejected, a promise must not transition to any other state.
-			return;
-		}
+		// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
+		// 2.1.3.1 When rejected, a promise must not transition to any other state.
+		assert(this._state === State.Pending);
 
 		trace && trace(this, "_follow([Thenable])");
 		var called = false;
