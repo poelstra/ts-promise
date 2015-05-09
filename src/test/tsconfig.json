@@ -20,6 +20,7 @@
         "./test-Stack.ts",
         "./test-Trace.ts",
         "./test-aplus.ts",
+        "./test-async.ts",
         "./test-utils.ts"
     ]
 }

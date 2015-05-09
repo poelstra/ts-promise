@@ -61,25 +61,26 @@ export class Async {
 	private _scheduled = false;
 	private _scheduler: (callback: () => void) => void = null;
 
-	setScheduler(scheduler: (callback: () => void) => void): void {
-		assert(typeof scheduler === "function");
+	/**
+	 * Configure alternative scheduler to use.
+	 * The scheduler function will be called with a flusher, which needs to be
+	 * executed to flush the queue. Note: the flusher may throw an
+	 * exception, if any of the callbacks on the queue throws one.
+	 * This will result in another flush to be scheduled before returning.
+	 *
+	 * Call with `null` to reset the scheduler to the default (setImmediate).
+	 *
+	 * Example usage (this is basically the default):
+	 *   setScheduler((flusher) => setImmediate(flusher));
+	 */
+	setScheduler(scheduler: (flusher: () => void) => void): void {
+		assert(scheduler === null || typeof scheduler === "function");
 		this._scheduler = scheduler;
-	}
-
-	schedule(): void {
-		if (!this._scheduled) {
-			// Note: we 'fall back' to setImmediate here (instead of e.g.
-			// assigning it to the _scheduler property once), to allow
-			// setImmediate to be e.g. replaced by a mocked one (e.g. Sinon's
-			// useFakeTimers())
-			(this._scheduler || setImmediate)(this._flusher);
-			this._scheduled = true;
-		}
 	}
 
 	enqueue(callback: (arg: any) => void, arg: any): void {
 		if (!this._flushing && !this._scheduled) {
-			this.schedule();
+			this._schedule();
 		}
 		if (!this._current) {
 			this._current = this._pool.pop();
@@ -93,22 +94,20 @@ export class Async {
 		}
 	}
 
+	private _schedule(): void {
+		assert(!this._scheduled);
+		// Note: we 'fall back' to setImmediate here (instead of e.g.
+		// assigning it to the _scheduler property once), to allow
+		// setImmediate to be e.g. replaced by a mocked one (e.g. Sinon's
+		// useFakeTimers())
+		(this._scheduler || setImmediate)(this._flusher);
+		this._scheduled = true;
+	}
+
 	private _scheduledFlush(): void {
 		// Indicate that this 'iteration' of the flush is complete.
 		this._scheduled = false;
-		try {
-			this.flush();
-		} finally {
-			// If one of the callbacks in the queue throws an exception,
-			// (e.g. when Promise#done() detects a rejection) make sure to
-			// reschedule the remainder of the queue(s) for another iteration.
-			// This approach has the advantage of immediately allowing to stop
-			// the program in e.g. NodeJS, but also allows to continue running
-			// correctly in a browser.
-			if (this._ring[0].length > 0) {
-				this.schedule();
-			}
-		}
+		this.flush();
 	}
 
 	flush(): void {
@@ -140,6 +139,16 @@ export class Async {
 			};
 		} finally {
 			this._flushing = false;
+
+			// If one of the callbacks in the queue throws an exception,
+			// (e.g. when Promise#done() detects a rejection) make sure to
+			// reschedule the remainder of the queue(s) for another iteration.
+			// This approach has the advantage of immediately allowing to stop
+			// the program in e.g. NodeJS, but also allows to continue running
+			// correctly in a browser.
+			if (this._ring[0].length > 0 && !this._scheduled) {
+				this._schedule();
+			}
 		}
 	}
 }
