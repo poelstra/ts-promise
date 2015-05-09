@@ -17,6 +17,7 @@ export default class BaseError implements Error {
 	constructor(name: string, message: string) {
 		this.name = name;
 		this.message = message;
+		/* istanbul ignore else */ // TODO: remove when testing for non-V8
 		if (hasStacks) {
 			(<any>Error).captureStackTrace(this, this.constructor);
 		} else {

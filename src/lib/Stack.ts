@@ -17,6 +17,7 @@ export default class Stack {
 	private stack: string; // Note: name *must* be "stack", without underscore
 
 	constructor(ignoreUntil: Function = Stack) {
+		/* istanbul ignore else */ // TODO: remove when testing for non-V8
 		if (hasStacks) {
 			(<any>Error).captureStackTrace(this, ignoreUntil);
 		} else {
