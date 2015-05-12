@@ -195,7 +195,13 @@ describe("Promise", (): void => {
 			d2.reject(e);
 			Promise.flush();
 			expect(d.promise.reason()).to.equal(e);
-		})
+		});
+		it("VoidDeferred can be resolved using Thenable", () => {
+			var d = Promise.defer();
+			d.resolve(Promise.resolve()); // Mostly for the TS typing
+			Promise.flush();
+			expect(d.promise.isFulfilled()).to.equal(true);
+		});
 	});
 
 	describe("#then()", () => {

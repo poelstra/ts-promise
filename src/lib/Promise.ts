@@ -133,7 +133,7 @@ export interface VoidDeferred extends Deferred<void> {
 	 * This function is a free function (i.e. not a 'method' on this object).
 	 * Note: resolving with a rejected Thenable leads to a rejected promise.
 	 */
-	resolve: (value?: void) => void;
+	resolve: (value?: void|Thenable<void>) => void;
 }
 
 /**
