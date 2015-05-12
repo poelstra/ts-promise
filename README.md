@@ -54,7 +54,7 @@ p.then(() => {
 
 Example output of the above:
 ```
-42
+"hello world"
 Error: my error
     at /home/martin/src/promise-example/example.js:9:35
     at Promise._unwrap (/home/martin/src/ts-promise/src/lib/Promise.ts:542:20)
