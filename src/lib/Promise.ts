@@ -26,10 +26,12 @@ export interface Thenable<T> {
 
 export class UnhandledRejectionError extends BaseError {
 	public reason: any;
+	public trace: Trace;
 
-	constructor(reason: any) {
+	constructor(reason: any, trace: Trace) {
 		super("UnhandledRejectionError", "unhandled rejection: " + reason);
 		this.reason = reason;
+		this.trace = trace;
 	}
 }
 
@@ -83,8 +85,11 @@ interface Handler<T, R> {
 	promise: Promise<T>;
 	onFulfilled: FulfillmentHandler<T, R>;
 	onRejected: RejectionHandler<R>;
-	slave: Promise<R>;
+	slave: Promise<R>; // Will be undefined if done is truthy
+	done: Trace; // Will be undefined if slave is truthy
 }
+
+var dummyDoneTrace = new Trace();
 
 /**
  * Combination of a promise and its resolve/reject functions.
@@ -241,7 +246,7 @@ export class Promise<T> implements Thenable<T> {
 		// Construct new Promise, but use subclassed constructor, if any
 		var slave = new (Object.getPrototypeOf(this).constructor)(internalResolver);
 		slave._setSource(this);
-		this._enqueue(slave, onFulfilled, onRejected);
+		this._enqueue(onFulfilled, onRejected, slave, undefined);
 		return slave;
 	}
 
@@ -249,11 +254,20 @@ export class Promise<T> implements Thenable<T> {
 		onFulfilled?: (value: T) => void|Thenable<void>,
 		onRejected?: (reason: Error) => void|Thenable<void>
 	): void {
+		trace && trace(this, `done(${typeof onFulfilled}, ${typeof onRejected})`);
 		if (this._state === State.Fulfilled && typeof onFulfilled !== "function") {
 			return;
 		}
-		trace && trace(this, `done(${typeof onFulfilled}, ${typeof onRejected})`);
-		this._enqueue(undefined, onFulfilled, onRejected);
+
+		let doneTrace = dummyDoneTrace;
+		if (longTraces) {
+			doneTrace = new Trace();
+			if (this._trace) {
+				doneTrace.setSource(this._trace);
+			}
+		}
+
+		this._enqueue(onFulfilled, onRejected, undefined, doneTrace);
 	}
 
 	public catch<R>(onRejected?: (reason: Error) => R|Thenable<R>): Promise<R> {
@@ -486,7 +500,7 @@ export class Promise<T> implements Thenable<T> {
 		assert(this._state === State.Pending);
 
 		trace && trace(this, `_follow([Promise ${slave._id}])`);
-		slave._enqueue(this, undefined, undefined);
+		slave._enqueue(undefined, undefined, this, undefined);
 	}
 
 	private _followThenable(slave: Thenable<any>, then: Function): void {
@@ -537,8 +551,19 @@ export class Promise<T> implements Thenable<T> {
 		}
 	}
 
-	private _enqueue(slave: Promise<any>, onFulfilled: FulfillmentHandler<T, any>, onRejected: RejectionHandler<any>): void {
-		var h: Handler<T, any> = { promise: this, onFulfilled, onRejected, slave };
+	private _enqueue(
+		onFulfilled: FulfillmentHandler<T, any>,
+		onRejected: RejectionHandler<any>,
+		slave: Promise<any>,
+		done: Trace
+	): void {
+		var h: Handler<T, any> = {
+			promise: this,
+			onFulfilled,
+			onRejected,
+			slave,
+			done
+		};
 		if (this._state !== State.Pending) {
 			async.enqueue(Promise._unwrapper, h);
 		} else {
@@ -563,7 +588,10 @@ export class Promise<T> implements Thenable<T> {
 			var handler = h[i];
 			i++;
 
-			if (handler.slave) {
+			if (handler.done) {
+				// .done(...) callbacks
+				async.enqueue(Promise._unwrapper, handler);
+			} else {
 				if (!handler.onFulfilled && !handler.onRejected) {
 					// we're the return value of an onFulfilled, tell our
 					// 'parent' to resolve
@@ -573,48 +601,48 @@ export class Promise<T> implements Thenable<T> {
 						handler.slave._reject(this._result);
 					}
 				} else {
-					// .then() callbacks, including the returned promise from .then()
+					// .then(...) callbacks, including the returned promise from .then()
 					async.enqueue(Promise._unwrapper, handler);
 				}
-			} else {
-				// .done() callbacks
-				async.enqueue(Promise._unwrapper, handler);
 			}
 		}
 	}
 
 	private _unwrap(handler: Handler<T, any>): void {
 		var callback: (x: any) => any = this._state === State.Fulfilled ? handler.onFulfilled : handler.onRejected;
-		var slave = handler.slave;
-		if (!slave) {
+		if (handler.done) {
 			// Unwrap .done() callbacks
 			trace && trace(this, `_unwrap()`);
 			if (typeof callback !== "function") {
 				// No callback: if we ended in a rejection, throw it, otherwise
 				// all was good.
 				if (this._state === State.Rejected) {
-					throw new UnhandledRejectionError(this._result);
+					let unhandled = new UnhandledRejectionError(this._result, handler.done);
+					throw unhandled; // TODO Allow intercepting these
 				}
 				return;
 			}
 			assert(!unwrappingPromise);
 			unwrappingPromise = this;
-			// Don't try-catch, in order to let it break immediately
 			try {
 				var result = callback(this._result);
-				if (!result) {
-					// Common case: no result value
-					return;
+				if (result) { // skips the common cases like `undefined`
+					// May be a thenable, need to start following it...
+					var p = (result instanceof Promise) ? result : Promise.resolve(result);
+					p.done(); // Ensure it throws as soon as it's rejected
 				}
-				// May be a thenable, need to start following it...
-				var p = (result instanceof Promise) ? result : Promise.resolve(result);
-				p.done(); // Ensure it throws as soon as it's rejected
-			} finally {
 				unwrappingPromise = undefined;
+			} catch(e) {
+				unwrappingPromise = undefined;
+
+				// Wrap in UnhandledRejectionError
+				let unhandled = new UnhandledRejectionError(e, handler.done);
+				throw unhandled; // TODO Allow intercepting these
 			}
 			return;
 		}
 		// Unwrap .then() calbacks
+		let slave = handler.slave;
 		trace && trace(this, `_unwrap(${slave._id})`);
 		if (typeof callback === "function") {
 			assert(!unwrappingPromise);

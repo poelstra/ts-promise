@@ -15,6 +15,7 @@ require("source-map-support").install();
 
 import assert = require("assert");
 import chai = require("chai");
+import Trace from "../lib/Trace";
 import { Promise, Thenable, UnhandledRejectionError, Deferred } from "../lib/Promise";
 
 import expect = chai.expect;
@@ -218,56 +219,86 @@ describe("Promise", (): void => {
 	describe("#done()", (): void => {
 		it("is silent on already resolved promise", (): void => {
 			Promise.resolve(42).done();
-			expect(Promise.flush).to.not.throw();
+			expect(() => Promise.flush()).to.not.throw();
 		});
 		it("is silent on later resolved promise", (): void => {
 			var d = Promise.defer<number>();
 			d.promise.done();
 			d.resolve(42);
-			expect(Promise.flush).to.not.throw();
+			expect(() => Promise.flush()).to.not.throw();
 		});
 		it("is silent when its fulfill callback returns non-Error", (): void => {
 			Promise.resolve(42).done((v) => undefined);
-			expect(Promise.flush).to.not.throw();
+			expect(() => Promise.flush()).to.not.throw();
 		});
 		it("is silent when its fulfill callback returns non-Error Promise", (): void => {
 			Promise.resolve(42).done((v) => Promise.resolve());
-			expect(Promise.flush).to.not.throw();
+			expect(() => Promise.flush()).to.not.throw();
 		});
 		it("is silent when its reject callback returns non-Error", (): void => {
 			Promise.reject(new Error("boom")).done(null, (r) => undefined);
-			expect(Promise.flush).to.not.throw();
+			expect(() => Promise.flush()).to.not.throw();
 		});
 		it("is silent when its reject callback returns non-Error Promise", (): void => {
 			Promise.reject(new Error("boom")).done(null, (r) => Promise.resolve());
-			expect(Promise.flush).to.not.throw();
+			expect(() => Promise.flush()).to.not.throw();
 		});
 		it("is silent when its reject callback returns non-Error Thenable", (): void => {
 			var thenable: Thenable<void> = {
 				then: (cb: Function): Thenable<any> => { cb(); return null; }
 			}
 			Promise.reject(new Error("boom")).done(null, (r) => thenable);
-			expect(Promise.flush).to.not.throw();
+			expect(() => Promise.flush()).to.not.throw();
 		});
-		it("should immediately break on thrown error", (): void => {
+		it("should immediately break on thrown error in normal callback", (): void => {
+			var ready = false;
+			Promise.resolve().done(() => { throw new Error("boom"); });
+			Promise.resolve().then((): void => {
+				ready = true;
+			});
+			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(ready).to.be.false;
+			Promise.flush();
+			expect(ready).to.be.true;
+		});
+		it("should immediately break on thrown error in error callback", (): void => {
+			var ready = false;
+			Promise.reject(new Error("dummy")).done(undefined, () => { throw new Error("boom"); });
+			Promise.resolve().then((): void => {
+				ready = true;
+			});
+			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(ready).to.be.false;
+			Promise.flush();
+			expect(ready).to.be.true;
+		});
+		it("should immediately break on returned rejection in callback", (): void => {
+			Promise.resolve().done((): Promise<void> => {
+				return Promise.reject(new Error("boom"));
+			});
+			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+		});
+		it("should immediately break on asynchronously rejected Thenable", (): void => {
+			var d = Promise.defer();
+			Promise.resolve().done((): Promise<void> => {
+				return d.promise;
+			});
+			Promise.flush();
+			d.reject(new Error("boom"));
+			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+		});
+		it("should break on already rejected promise", (): void => {
 			var ready = false;
 			Promise.reject(new Error("boom")).done();
 			Promise.resolve().then((): void => {
 				ready = true;
 			});
-			expect(Promise.flush).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
 			expect(ready).to.be.false;
 			Promise.flush();
 			expect(ready).to.be.true;
 		});
-		it("should immediately break on returned rejection", (): void => {
-			var p = Promise.resolve();
-			p.then((): Promise<void> => {
-				return Promise.reject(new Error("boom"));
-			}).done();
-			expect(Promise.flush).to.throw(UnhandledRejectionError);
-		});
-		it("should immediately break on asynchronously rejected Thenable", (): void => {
+		it("should break on asynchronously rejected Promise", (): void => {
 			var d = Promise.defer();
 			var p = Promise.resolve();
 			p.then((): Promise<void> => {
@@ -275,7 +306,50 @@ describe("Promise", (): void => {
 			}).done();
 			Promise.flush();
 			d.reject(new Error("boom"));
-			expect(Promise.flush).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+		});
+		it("should support long traces on throw from callback", () => {
+			Promise.setLongTraces(true);
+			Promise.resolve().done(() => { throw new Error("boom"); });
+			var caught: UnhandledRejectionError;
+			try {
+				Promise.flush();
+			} catch(e) {
+				caught = e;
+			}
+			expect(caught).to.be.instanceof(UnhandledRejectionError);
+			// TODO: assert the trace property for correctness
+			expect(caught.trace.inspect()).to.not.contain("no trace");
+			Promise.setLongTraces(false);
+		});
+		it("should support long traces on throw from callback without non-long-trace source", () => {
+			var p = Promise.resolve();
+			Promise.setLongTraces(true);
+			p.done(() => { throw new Error("boom"); });
+			var caught: UnhandledRejectionError;
+			try {
+				Promise.flush();
+			} catch(e) {
+				caught = e;
+			}
+			expect(caught).to.be.instanceof(UnhandledRejectionError);
+			// TODO: assert the trace property for correctness
+			expect(caught.trace.inspect()).to.not.contain("no trace");
+			Promise.setLongTraces(false);
+		});
+		it("should support long traces on rejection without callbacks", () => {
+			Promise.setLongTraces(true);
+			Promise.reject(new Error("boom")).done();
+			var caught: UnhandledRejectionError;
+			try {
+				Promise.flush();
+			} catch(e) {
+				caught = e;
+			}
+			expect(caught).to.be.instanceof(UnhandledRejectionError);
+			// TODO: assert the trace property for correctness
+			expect(caught.trace.inspect()).to.not.contain("no trace");
+			Promise.setLongTraces(false);
 		});
 	}); // #done()
 
@@ -489,12 +563,12 @@ describe("UnhandledRejectionError", () => {
 	describe("constructor()", () => {
 		it("includes reason in message", () => {
 			var e = new Error("boom");
-			var ure = new UnhandledRejectionError(e);
+			var ure = new UnhandledRejectionError(e, new Trace());
 			expect(ure.message).to.contain("Error: boom");
 		});
 		it("sets its .reason property to the original error", () => {
 			var e = new Error("boom");
-			var ure = new UnhandledRejectionError(e);
+			var ure = new UnhandledRejectionError(e, new Trace());
 			expect(ure.reason).to.equal(e);
 		});
 	});
