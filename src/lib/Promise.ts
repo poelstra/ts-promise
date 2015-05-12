@@ -286,6 +286,20 @@ export class Promise<T> implements Thenable<T> {
 		return this._result;
 	}
 
+	public inspect(): string {
+		return this.toString();
+	}
+
+	public toString(): string {
+		var state: string;
+		switch (this._state) {
+			case State.Pending: state = "pending"; break;
+			case State.Fulfilled: state = "fulfilled"; break;
+			case State.Rejected: state = "rejected"; break;
+		}
+		return `[Promise ${this._id}: ${state}]`;
+	}
+
 	public static resolve<R>(value: R|Thenable<R>): Promise<R>;
 	public static resolve(): Promise<void>;
 	public static resolve<R>(value?: R|Thenable<R>): Promise<void|R> {

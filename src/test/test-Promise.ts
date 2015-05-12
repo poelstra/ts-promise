@@ -375,6 +375,36 @@ describe("Promise", (): void => {
 		});
 	});
 
+	describe("#toString()", () => {
+		it("returns a readable representation for a pending Promise", () => {
+			var p = Promise.defer().promise;
+			expect(p.toString()).to.match(/^\[Promise \d+: pending\]$/);
+		});
+		it("returns a readable representation for a fulfilled Promise", () => {
+			var p = Promise.resolve();
+			expect(p.toString()).to.match(/^\[Promise \d+: fulfilled\]$/);
+		});
+		it("returns a readable representation for a rejected Promise", () => {
+			var p = Promise.reject(new Error("boom"));
+			expect(p.toString()).to.match(/^\[Promise \d+: rejected\]$/);
+		});
+	});
+
+	describe("#inspect()", () => {
+		it("returns a readable representation for a pending Promise", () => {
+			var p = Promise.defer().promise;
+			expect(p.inspect()).to.match(/^\[Promise \d+: pending\]$/);
+		});
+		it("returns a readable representation for a fulfilled Promise", () => {
+			var p = Promise.resolve();
+			expect(p.inspect()).to.match(/^\[Promise \d+: fulfilled\]$/);
+		});
+		it("returns a readable representation for a rejected Promise", () => {
+			var p = Promise.reject(new Error("boom"));
+			expect(p.inspect()).to.match(/^\[Promise \d+: rejected\]$/);
+		});
+	});
+
 	describe("long stack traces", (): void => {
 		before(() => {
 			Promise.setLongTraces(true);
