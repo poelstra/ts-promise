@@ -31,6 +31,11 @@ cd your-project
 npm install --save ts-promise
 ```
 
+If you're using Atom Typescript, this is all you need to get the typings working
+in your project too.
+Otherwise, add a `<reference path="./node_modules/ts-promise/dist/ts-promise.d.ts" />`
+line to your project. Rumor has it that this is no longer necessary when TS 1.6 arrives.
+
 ```ts
 // Example using ES6 syntax (e.g. using Typescript or Babel)
 
@@ -177,6 +182,10 @@ Methods on Promise instances:
   Returns fulfillment value if fulfilled, otherwise throws an error.
 - `reason(): any`
   Returns rejection reason if rejected, otherwise throws an error.
+- `toString(): string`
+  Returns a human-readable representation of the promise and its status.
+- `inspect(): string`
+  Returns a human-readable representation of the promise and its status.
 
 # TODO
 
@@ -207,7 +216,17 @@ npm install
 npm run prepublish
 ```
 
+There currently seems to be an issue with building on Windows, where my
+workaround for dts-generator doesn't work. Workaround for the workaround:
+(manually) replace the escape-characters ("\n" etc) in dist/ts-promise.d.ts.
+A proper fix is in the works.
+
 # Changelog
+
+0.1.4:
+- Add longStackTraces support to .done()
+- Export VoidDeferred interface and allow resolving it with a Thenable<void>
+- Add .toString() and .inspect()
 
 0.1.3:
 - Add Promise.defer()
