@@ -238,6 +238,10 @@ A proper fix is in the works.
 
 # Changelog
 
+0.1.5:
+- Add Promise.race()
+- Add .delay() on Promise and instance
+
 0.1.4:
 - Add longStackTraces support to .done()
 - Export VoidDeferred interface and allow resolving it with a Thenable<void>
