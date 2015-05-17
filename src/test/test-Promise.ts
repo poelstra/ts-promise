@@ -220,6 +220,44 @@ describe("Promise", (): void => {
 		});
 	}); // .race()
 
+	describe(".delay()", () => {
+		it("resolves to void after given timeout, given no value", (done: MochaDone) => {
+			var p = Promise.delay(10);
+			Promise.flush();
+			expect(p.isPending()).to.equal(true);
+			p.then((v) => {
+				expect(v).to.equal(undefined);
+				done();
+			});
+		});
+		it("resolves to a value after given timeout, given a value", (done: MochaDone) => {
+			var p = Promise.delay(42, 10);
+			Promise.flush();
+			expect(p.isPending()).to.equal(true);
+			p.then((v) => {
+				expect(v).to.equal(42);
+				done();
+			});
+		});
+		it("resolves to a value after given timeout, given a Thenable", (done: MochaDone) => {
+			var t = Promise.resolve(42);
+			var p = Promise.delay(t, 10);
+			Promise.flush();
+			expect(p.isPending()).to.equal(true);
+			p.then((v) => {
+				expect(v).to.equal(42);
+				done();
+			});
+		});
+		it("immediately rejects, given a rejected Thenable", () => {
+			var t = Promise.reject(new Error("boom"));
+			var p = Promise.delay(t, 1000);
+			Promise.flush();
+			expect(p.isRejected()).to.equal(true);
+			expect(p.reason().message).to.equal("boom");
+		});
+	});
+
 	describe(".defer", () => {
 		var d: Deferred<number>;
 		beforeEach(() => {
@@ -534,6 +572,24 @@ describe("Promise", (): void => {
 		it("returns a readable representation for a rejected Promise", () => {
 			var p = Promise.reject(new Error("boom"));
 			expect(p.inspect()).to.match(/^\[Promise \d+: rejected\]$/);
+		});
+	});
+
+	describe("#delay()", () => {
+		it("resolves to same value after given timeout", (done: MochaDone) => {
+			var p = Promise.resolve(42).delay(10);
+			Promise.flush();
+			expect(p.isPending()).to.equal(true);
+			p.then((v) => {
+				expect(v).to.equal(42);
+				done();
+			});
+		});
+		it("immediately passes a rejection", () => {
+			var p = Promise.reject(new Error("boom")).delay(1000);
+			Promise.flush();
+			expect(p.isRejected()).to.equal(true);
+			expect(p.reason().message).to.equal("boom");
 		});
 	});
 

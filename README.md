@@ -142,6 +142,13 @@ Static methods on Promise:
   Create a promise that is resolved or rejected with the first resolved or
   rejected Thenable (or 'plain' value) in the array. Note: the promise will
   never resolve if the input array is empty.
+- `static delay(ms: number): Promise<void>`
+  Create a promise that resolves with `undefined` after `ms` milliseconds.
+- `static delay<R>(value: R|Thenable<R>, ms: number): Promise<R>`
+  Create a promise that resolves with given value after `ms` milliseconds.
+  If `value` is a `Thenable`, the timer will start when it is resolved.
+  If `value` is rejected, the resulting promise is also rejected, without
+  waiting for the timer.
 - `static defer<X>(): Deferred<X>`
   Return an object containing a promise and its corresponding resolve and reject
   functions. Note: most users will typically want to use the Promise constructor
@@ -190,6 +197,11 @@ Methods on Promise instances:
   Returns a human-readable representation of the promise and its status.
 - `inspect(): string`
   Returns a human-readable representation of the promise and its status.
+- `delay(ms: number): Promise<T>`
+  Create a promise that resolves with the same value of this promise, after
+  `ms` milliseconds. The timer will start when the current promise is resolved.
+  If the current promise is rejected, the resulting promise is also rejected,
+  without waiting for the timer.
 
 # TODO
 

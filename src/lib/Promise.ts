@@ -314,6 +314,14 @@ export class Promise<T> implements Thenable<T> {
 		return `[Promise ${this._id}: ${state}]`;
 	}
 
+	public delay(ms: number): Promise<T> {
+		return this.then((value: T) => {
+			return new Promise<T>((resolve) => {
+				setTimeout(() => resolve(value), ms);
+			});
+		});
+	}
+
 	public static resolve<R>(value: R|Thenable<R>): Promise<R>;
 	public static resolve(): Promise<void>;
 	public static resolve<R>(value?: R|Thenable<R>): Promise<void|R> {
@@ -381,6 +389,20 @@ export class Promise<T> implements Thenable<T> {
 			resolve: resolve,
 			reject: reject
 		};
+	}
+
+	public static delay(ms: number): Promise<void>;
+	public static delay<R>(value: R|Thenable<R>, ms: number): Promise<R>;
+	public static delay<R>(...args: any[]): Promise<void|R> {
+		if (arguments[1] === undefined) {
+			// delay(ms)
+			let ms = arguments[0];
+			return new Promise<void>((resolve) => {
+				setTimeout(resolve, ms);
+			});
+		}
+		// delay(value, ms)
+		return Promise.resolve(arguments[0]).delay(arguments[1]);
 	}
 
 	public static setLongTraces(enable: boolean): void {
