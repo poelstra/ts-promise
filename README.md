@@ -138,6 +138,10 @@ Static methods on Promise:
   they're not a `Thenable`). If any of the input promises leads to a rejection,
   the output promise is rejected with the reason of the first rejected promise.
   See ES6 Promise spec for details.
+- `static race<X>(thenables: (X|Thenable<X>)[]): Promise<X>`
+  Create a promise that is resolved or rejected with the first resolved or
+  rejected Thenable (or 'plain' value) in the array. Note: the promise will
+  never resolve if the input array is empty.
 - `static defer<X>(): Deferred<X>`
   Return an object containing a promise and its corresponding resolve and reject
   functions. Note: most users will typically want to use the Promise constructor
@@ -191,7 +195,6 @@ Methods on Promise instances:
 
 Planned features (in fairly arbitrary order):
 - `.promisify()`
-- Missing ES6 method `race<R>(promises: (R | Thenable<R>)[]): Promise<R>`
 - Possibly-unhandled-rejection detection
 - Possibly-unterminated-promise-chain detection
 - Differentiating between programmer errors (e.g. assertions, null derefences)

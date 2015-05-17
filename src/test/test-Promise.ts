@@ -162,6 +162,64 @@ describe("Promise", (): void => {
 		});
 	}); // .all()
 
+	describe(".race()", (): void => {
+		it("should never resolve for empty array", (): void => {
+			var p = Promise.race([]);
+			Promise.flush();
+			expect(p.isPending()).to.equal(true);
+		});
+		it("should resolve with first promise's result", (): Promise<any> => {
+			var d1 = Promise.defer<number>();
+			var d2 = Promise.defer<number>();
+			setTimeout(() => d1.resolve(1), 20);
+			setTimeout(() => d2.resolve(2), 10);
+			return Promise.race([d1.promise, d2.promise]).then((result): void => {
+				expect(result).to.deep.equal(2);
+			});
+		});
+		it("should reject when one Promise fails", (): Promise<any> => {
+			var d1 = Promise.defer<number>();
+			var d2 = Promise.defer<number>();
+			setTimeout(() => d1.reject(new Error("boom")), 10);
+			setTimeout(() => d2.resolve(2), 20);
+			return Promise.race([d1.promise, d2.promise]).catch((e: Error): void => {
+				expect(e.message).to.contain("boom");
+			});
+		});
+		it("should recursively resolve Thenables", () => {
+			var result: number;
+			var d1 = Promise.defer<number>();
+			var d2 = Promise.defer<number>();
+			Promise.race([d1.promise]).then((n) => result = n);
+			d1.resolve(d2.promise);
+			Promise.flush();
+			expect(result).to.be.undefined;
+			d2.resolve(2);
+			Promise.flush();
+			expect(result).to.deep.equal(2);
+		});
+		it("should accept non-Thenables", () => {
+			var result: number;
+			var d1 = Promise.defer<number>();
+			Promise.race([d1.promise, 2]).then((n) => result = n);
+			Promise.flush();
+			expect(result).to.equal(2);
+		});
+		it("should accept non-Promise Thenables", () => {
+			var result: number;
+			var callback: (n: number) => void;
+			// Create rather dirty Promise-mock
+			var thenable: Thenable<number> = {
+				then: (cb: Function): Thenable<any> => { callback = <any>cb; return null; }
+			}
+			Promise.race([thenable]).then((n) => result = n);
+			callback(42);
+			expect(result).to.be.undefined;
+			Promise.flush();
+			expect(result).to.equal(42);
+		});
+	}); // .race()
+
 	describe(".defer", () => {
 		var d: Deferred<number>;
 		beforeEach(() => {

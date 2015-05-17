@@ -356,6 +356,17 @@ export class Promise<T> implements Thenable<T> {
 		});
 	}
 
+	public static race<X>(thenables: (X|Thenable<X>)[]): Promise<X> {
+		return new Promise<X>((resolve, reject): void => {
+			assert(Array.isArray(thenables), "thenables must be an Array");
+			for (let i = 0; i < thenables.length; i++) {
+				let t = thenables[i];
+				let slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
+				Promise.resolve(slave).done(resolve, reject);
+			}
+		});
+	}
+
 	public static defer(): VoidDeferred;
 	public static defer<X>(): Deferred<X>;
 	public static defer<X>(): Deferred<any> {
