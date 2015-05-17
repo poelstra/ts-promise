@@ -1,5 +1,6 @@
 /coverage
 /src
+/dist/test
 /typings
 /tsd.json
 /tslint.json
