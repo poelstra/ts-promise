@@ -1,5 +1,5 @@
 /coverage
-/src
+/src/test
 /dist/test
 /typings
 /tsd.json
