@@ -305,7 +305,7 @@ describe("Promise", (): void => {
 		// All other cases already handled by Promise/A+ tests
 		it("ignores no handlers, returns Promise of same type", () => {
 			var result: number;
-			Promise.resolve(42).then().then((v) => {
+			Promise.resolve(42).then<number>().then((v) => {
 				result = v;
 			})
 			Promise.flush();
