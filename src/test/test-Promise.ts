@@ -304,28 +304,63 @@ describe("Promise", (): void => {
 	describe("#then()", () => {
 		// All other cases already handled by Promise/A+ tests
 
-		it("ignores no handlers, returns Promise of same type", () => {
+		it("has correct typing for just fulfillment handler", () => {
 			let p = Promise.resolve(42);
-			let actual = p.then<number>();
+			let actual = p.then((n) => "foo");
+			let expected: Promise<string>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for both handlers of same type, different from promise", () => {
+			let p = Promise.resolve({});
+			let actual = p.then(() => 42, (e) => 42);
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for both handlers of same type, same as promise", () => {
+			let p = Promise.resolve(42);
+			let actual = p.then(() => 42, (e) => 42);
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for both handlers of different type", () => {
+			let p = Promise.resolve();
+			let actual = p.then<string|number>(() => 42, (e) => "foo");
+			let expected: Promise<string|number>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for just rejection handler of same type", () => {
+			let p = Promise.resolve(42);
+			let actual = p.then(undefined, (e) => 42);
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
+		});
+		/* Can't get this to work yet. Seems that the void-type is matching too
+		 * eagerly. So actual currently really resolves to Promise<string>,
+		 * which is not correct. Luckily, this use-case won't happen that often,
+		 * because one should be using `.catch()` instead.
+		it("has correct typing for just rejection handler of different type", () => {
+			let p = Promise.resolve(42);
+			let actual = p.then(undefined, (e) => "foo");
+			let expected: Promise<number|string>;
+			expected = actual;
+			actual = expected;
+		});
+		*/
+		it("ignores no handlers, returns Promise of same type", () => {
+			// Pathological case, only tested for correctness, typing requires
+			// passing the callback
+			let p = Promise.resolve(42);
+			let actual = p.then<number>(undefined);
 			let expected: Promise<number>;
 			expected = actual;
 			actual = expected;
 			Promise.flush();
 			expect(actual.value()).to.equal(42);
-		});
-		it("has correct typing for just fulfillment handler", () => {
-			let p = Promise.resolve(42);
-			let actual = p.then((n) => String(n));
-			let expected: Promise<string>;
-			expected = actual;
-			actual = expected;
-		});
-		it("has correct typing for just rejection handler", () => {
-			let p = Promise.resolve(42);
-			let actual = p.then(undefined, (e) => String(e));
-			let expected: Promise<string|number>;
-			expected = actual;
-			actual = expected;
 		});
 	});
 

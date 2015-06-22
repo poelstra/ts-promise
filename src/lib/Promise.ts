@@ -265,34 +265,10 @@ export class Promise<T> implements Thenable<T> {
 	 * If either or both callbacks are missing, the fulfillment or rejection is
 	 * passed on unmodified.
 	 *
-	 * @param onFulfilled Optional callback called with promise's fulfillment
-	 *                    value iff promise is fulfilled. Callback can return
-	 *                    another value or promise for a value.
-	 * @param onRejected  Optional callback called with promise's rejection
-	 *                    reason iff promise is rejected. Callback can return
-	 *                    another value or promise for a value.
-	 * @return Promise for value returned by either of the callbacks
-	 */
-	public then<R>(
-		onFulfilled?: void,
-		onRejected?: (reason: Error) => R|Thenable<R>
-	): Promise<T|R>;
-	/**
-	 * Run either `onFulfilled` or `onRejected` callbacks when the promise is
-	 * resolved. Returns another promise for the return value of such a
-	 * callback.
+	 * Use `.catch(onRejected)` instead of `.then(undefined, onRejected)` for
+	 * stronger typing, better readability, and more functionality (predicates).
 	 *
-	 * The callback will always be called at most once, and always
-	 * asynchronously (i.e. some time after e.g. the `resolver` passed to the
-	 * constructor has resolved the promise).
-	 *
-	 * Any error thrown or rejected promise returned from a callback will cause
-	 * the returned promise to be rejected with that error.
-	 *
-	 * If either or both callbacks are missing, the fulfillment or rejection is
-	 * passed on unmodified.
-	 *
-	 * @param onFulfilled Optional callback called with promise's fulfillment
+	 * @param onFulfilled Callback called with promise's fulfillment
 	 *                    value iff promise is fulfilled. Callback can return
 	 *                    another value or promise for a value.
 	 * @param onRejected  Optional callback called with promise's rejection
@@ -302,33 +278,6 @@ export class Promise<T> implements Thenable<T> {
 	 */
 	public then<R>(
 		onFulfilled: (value: T) => R|Thenable<R>,
-		onRejected?: (reason: Error) => R|Thenable<R>
-	): Promise<R>;
-	/**
-	 * Run either `onFulfilled` or `onRejected` callbacks when the promise is
-	 * resolved. Returns another promise for the return value of such a
-	 * callback.
-	 *
-	 * The callback will always be called at most once, and always
-	 * asynchronously (i.e. some time after e.g. the `resolver` passed to the
-	 * constructor has resolved the promise).
-	 *
-	 * Any error thrown or rejected promise returned from a callback will cause
-	 * the returned promise to be rejected with that error.
-	 *
-	 * If either or both callbacks are missing, the fulfillment or rejection is
-	 * passed on unmodified.
-	 *
-	 * @param onFulfilled Optional callback called with promise's fulfillment
-	 *                    value iff promise is fulfilled. Callback can return
-	 *                    another value or promise for a value.
-	 * @param onRejected  Optional callback called with promise's rejection
-	 *                    reason iff promise is rejected. Callback can return
-	 *                    another value or promise for a value.
-	 * @return Promise for value returned by either of the callbacks
-	 */
-	public then<R>(
-		onFulfilled?: void|((value: T) => R|Thenable<R>),
 		onRejected?: (reason: Error) => R|Thenable<R>
 	): Promise<R> {
 		trace && trace(this, `then(${typeof onFulfilled}, ${typeof onRejected})`);
@@ -347,7 +296,7 @@ export class Promise<T> implements Thenable<T> {
 		// Construct new Promise, but use subclassed constructor, if any
 		var slave = new (Object.getPrototypeOf(this).constructor)(internalResolver);
 		slave._setSource(this);
-		this._enqueue(<(value: T) => R|Thenable<R>>onFulfilled, onRejected, slave, undefined);
+		this._enqueue(onFulfilled, onRejected, slave, undefined);
 		return slave;
 	}
 
