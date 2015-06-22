@@ -222,7 +222,15 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	public then<R>(
-		onFulfilled?: (value: T) => R|Thenable<R>,
+		onFulfilled?: void,
+		onRejected?: (reason: Error) => R|Thenable<R>
+	): Promise<T|R>;
+	public then<R>(
+		onFulfilled: (value: T) => R|Thenable<R>,
+		onRejected?: (reason: Error) => R|Thenable<R>
+	): Promise<R>;
+	public then<R>(
+		onFulfilled?: void|((value: T) => R|Thenable<R>),
 		onRejected?: (reason: Error) => R|Thenable<R>
 	): Promise<R> {
 		trace && trace(this, `then(${typeof onFulfilled}, ${typeof onRejected})`);
@@ -241,7 +249,7 @@ export class Promise<T> implements Thenable<T> {
 		// Construct new Promise, but use subclassed constructor, if any
 		var slave = new (Object.getPrototypeOf(this).constructor)(internalResolver);
 		slave._setSource(this);
-		this._enqueue(onFulfilled, onRejected, slave, undefined);
+		this._enqueue(<(value: T) => R|Thenable<R>>onFulfilled, onRejected, slave, undefined);
 		return slave;
 	}
 
@@ -265,7 +273,7 @@ export class Promise<T> implements Thenable<T> {
 		this._enqueue(onFulfilled, onRejected, undefined, doneTrace);
 	}
 
-	public catch<R>(onRejected?: (reason: Error) => R|Thenable<R>): Promise<R> {
+	public catch<R>(onRejected?: (reason: Error) => R|Thenable<R>): Promise<T|R> {
 		return this.then(undefined, onRejected);
 	}
 
@@ -325,7 +333,9 @@ export class Promise<T> implements Thenable<T> {
 		return p;
 	}
 
-	public static reject(reason: Error): Promise<any> {
+	public static reject(reason: Error): Promise<void>;
+	public static reject<T>(reason: Error): Promise<T>;
+	public static reject<T>(reason: Error): Promise<T> {
 		var p = new Promise(internalResolver);
 		p._reject(reason);
 		return p;

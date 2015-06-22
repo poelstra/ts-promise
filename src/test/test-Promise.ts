@@ -303,15 +303,76 @@ describe("Promise", (): void => {
 
 	describe("#then()", () => {
 		// All other cases already handled by Promise/A+ tests
+
 		it("ignores no handlers, returns Promise of same type", () => {
-			var result: number;
-			Promise.resolve(42).then<number>().then((v) => {
-				result = v;
-			})
+			let p = Promise.resolve(42);
+			let actual = p.then<number>();
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
 			Promise.flush();
-			expect(result).to.equal(42);
+			expect(actual.value()).to.equal(42);
+		});
+		it("has correct typing for just fulfillment handler", () => {
+			let p = Promise.resolve(42);
+			let actual = p.then((n) => String(n));
+			let expected: Promise<string>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for just rejection handler", () => {
+			let p = Promise.resolve(42);
+			let actual = p.then(undefined, (e) => String(e));
+			let expected: Promise<string|number>;
+			expected = actual;
+			actual = expected;
 		});
 	});
+
+	describe("#catch()", () => {
+		// All other cases already handled by Promise/A+ tests
+
+		it("ignores no handler, returns Promise of same type", () => {
+			let p = Promise.resolve(42);
+			let actual = p.catch<number>();
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
+			Promise.flush();
+			expect(actual.value()).to.equal(42);
+		});
+		it("has correct typing for catch handler that returns same type", () => {
+			let p = Promise.resolve(42);
+			let actual = p.catch((n) => 1337);
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for catch handler that returns different type", () => {
+			let p = Promise.resolve(42);
+			let actual = p.catch((n) => String(n));
+			let expected: Promise<string|number>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for catch handler that only throws error", () => {
+			let p = Promise.resolve(42);
+			let actual = p.catch((n): number => { throw new Error("boom"); });
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
+		});
+		it("has correct typing for catch handler that only returns rejection", () => {
+			let p = Promise.resolve(42);
+			let actual = p.catch(
+				(n) => Promise.reject<number>(new Error("boom"))
+			);
+			let expected: Promise<number>;
+			expected = actual;
+			actual = expected;
+		});
+	});
+
 	describe("#done()", (): void => {
 		it("is silent on already resolved promise", (): void => {
 			Promise.resolve(42).done();
