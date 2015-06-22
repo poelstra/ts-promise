@@ -206,18 +206,33 @@ Methods on Promise instances:
 # TODO
 
 Planned features (in fairly arbitrary order):
-- `.promisify()`
 - Possibly-unhandled-rejection detection
-- Possibly-unterminated-promise-chain detection
-- Differentiating between programmer errors (e.g. assertions, null derefences)
-  and 'expected' errors (i.e. `.error()` support)
-- `.settle()`
-- Non-V8-support (should mainly be longStackTraces stuff)
-- UMD support?
+- Non-V8-support (should mainly be longStackTraces stuff, but also use of e.g.
+  MutationObserver)
+- Implement `.promisify()`
+- Auto-generate online docs using TypeDoc (needs TS 1.5 support in it)
+- Simplify code somewhat more (most notably reduce duplication of 'called'-logic
+  when resolving, maybe also slightly simplify async callback queue
+  implementation)
+
+Interesting ideas that need further investigation:
+- Support for differentiating between programmer errors (e.g. assertions, null
+  derefences) and 'expected' errors. E.g. bluebird has `.error()` and the
+  concept of OperationalError, but this may not be the best way to interoperate
+  with other libraries.
+- Possibly-unterminated-promise-chain detection. Wild idea that could help to
+  always make sure to either return a promise from a function, or properly
+  terminate it, thus reducing the chance of a PossiblyUnhandledRejectionError at
+  runtime.
+- `.settle()` and/or other form of simply waiting for a bunch of void-promises,
+  but await all of them before returning, even in case of errors. To prevent
+  e.g. shutting things down while some tasks were still running.
 - Split off async callback queue and stack trace handling into separate packages
-- Even simpler code (reduce duplication of 'called'-logic when resolving, maybe
-  slightly simplify async callback queue)
-- Better (and automated) documentation
+  to allow re-use by other packages.
+
+- UMD support? Submit an issue if you think this is useful to you, as I'm more
+  of a browserify guy myself.
+
 
 # Development
 
@@ -238,30 +253,43 @@ A proper fix is in the works.
 
 # Changelog
 
-0.1.5:
+0.2.0 (2015-06-23):
+- Allow passing predicate to `.catch()` (Error class or array of them, or a
+  custom matching function)
+- Add `.return()` and `.throw()` helpers
+- Document all public members of Promise and UndhandledRejectionError
+- Stricter typing for `Promise.reject()`, no longer returns `Promise<any>` by
+  default
+- Require `.then()` and `.catch()` to have first callback (for typing only,
+  implementation supports full Promises/A+)
+- Include .ts sources to not confuse debugger due to sourcemaps also being
+  included
+- Fix building on Windows
+
+0.1.5  (2015-05-17):
 - Add Promise.race()
 - Add .delay() on Promise and instance
 
-0.1.4:
+0.1.4  (2015-05-13):
 - Add longStackTraces support to .done()
 - Export VoidDeferred interface and allow resolving it with a Thenable<void>
 - Add .toString() and .inspect()
 
-0.1.3:
+0.1.3  (2015-05-09):
 - Add Promise.defer()
 - Add stack to BaseError
 - Add rejection reason to UnhandledRejectionError
 - 100% code coverage
 
-0.1.2:
+0.1.2 (2015-05-07):
 - Fix bundled .d.ts file for default export
 - Add synchronous inspection API
 - Export BaseError (to be moved to separate package later)
 
-0.1.1:
+0.1.1 (2015-05-06):
 - Transparent support for mocked timers (e.g. Sinon.useFakeTimers())
 
-0.1.0:
+0.1.0 (2015-05-04):
 - Initial version
 
 # License
