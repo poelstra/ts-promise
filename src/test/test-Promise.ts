@@ -654,6 +654,78 @@ describe("Promise", (): void => {
 		});
 	});
 
+	describe("#return()", () => {
+		it("waits for parent, then resolves to value", () => {
+			let d = Promise.defer();
+			let actual = d.promise.return("foo");
+			let expected: Promise<string>;
+			expected = actual;
+			actual = expected;
+
+			Promise.flush();
+			expect(actual.isPending()).to.equal(true);
+			d.resolve();
+			Promise.flush();
+			expect(actual.value()).to.equal("foo");
+		});
+		it("waits for parent, allows resolving to void", () => {
+			let d = Promise.defer();
+			let actual = d.promise.return();
+			let expected: Promise<void>;
+			expected = actual;
+			actual = expected;
+			Promise.flush();
+			expect(actual.isPending()).to.equal(true);
+			d.resolve();
+			Promise.flush();
+			expect(actual.value()).to.equal(undefined);
+		});
+		it("waits for parent, then passes a rejection", () => {
+			let e = new Error("boom");
+			let d = Promise.defer();
+			let actual = d.promise.return("foo");
+			let expected: Promise<string>;
+			expected = actual;
+			actual = expected;
+			Promise.flush();
+			expect(actual.isPending()).to.equal(true);
+			d.reject(e);
+			Promise.flush();
+			expect(actual.reason()).to.equal(e);
+		});
+	});
+
+	describe("#throw()", () => {
+		it("waits for parent, then rejects with reason", () => {
+			let e = new Error("boom");
+			let d = Promise.defer<string>();
+			let actual = d.promise.throw(e);
+			let expected: Promise<string>;
+			expected = actual;
+			actual = expected;
+
+			Promise.flush();
+			expect(actual.isPending()).to.equal(true);
+			d.resolve("foo");
+			Promise.flush();
+			expect(actual.reason()).to.equal(e);
+		});
+		it("waits for parent, then passes a rejection", () => {
+			let e = new Error("boom");
+			let originalError = new Error("original");
+			let d = Promise.defer<string>();
+			let actual = d.promise.throw(e);
+			let expected: Promise<string>;
+			expected = actual;
+			actual = expected;
+			Promise.flush();
+			expect(actual.isPending()).to.equal(true);
+			d.reject(originalError);
+			Promise.flush();
+			expect(actual.reason()).to.equal(originalError);
+		});
+	});
+
 	describe("long stack traces", (): void => {
 		before(() => {
 			Promise.setLongTraces(true);

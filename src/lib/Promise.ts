@@ -485,6 +485,56 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	/**
+	 * Return a promise that resolves to `value` after this promise is
+	 * fulfilled.
+	 * Returned promise is rejected if this promise is rejected.
+	 *
+	 * Equivalent to `.then(() => value)`.
+	 *
+	 * @param value Value or promise for value of returned promise
+	 * @return Promise resolved to value after this promise fulfills
+	 */
+	public return<R>(value: R|Thenable<R>): Promise<R>;
+	/**
+	 * Return a promise that resolves to `value` after this promise is
+	 * fulfilled.
+	 * Returned promise is rejected if this promise is rejected.
+	 *
+	 * Equivalent to `.then(() => value)`.
+	 *
+	 * @return Void promise resolved to value after this promise fulfills
+	 */
+	public return(): Promise<void>;
+	/**
+	 * Return a promise that resolves to `value` after this promise is
+	 * fulfilled.
+	 * Returned promise is rejected if this promise is rejected.
+	 *
+	 * Equivalent to `.then(() => value)`.
+	 *
+	 * @param value Value or promise for value of returned promise
+	 * @return Promise resolved to value after this promise fulfills
+	 */
+	public return<R>(value?: R|Thenable<R>): Promise<R> {
+		return this.then(() => value);
+	}
+
+	/**
+	 * Return a promise that is rejected with `reason` after this promise is
+	 * fulfilled.
+	 * If this promise is rejected, returned promise will rejected with that
+	 * error instead.
+	 *
+	 * Equivalent to `.then(() => { throw value; })`.
+	 *
+	 * @param reason Error reason to reject returned promise with
+	 * @return Promise rejected with `reason` after this promise fulfills
+	 */
+	public throw(reason: Error): Promise<T> {
+		return this.then(() => Promise.reject<T>(reason));
+	}
+
+	/**
 	 * Create an immediately resolved promise (in case of a 'normal' value), or
 	 * a promise that 'follows' another `Thenable` (e.g. a Promise from another
 	 * library).
