@@ -9,10 +9,7 @@
 
 // TODO:
 // - remove all "called = true"-type code in resolvers, replace by single check in _resolve()/_reject()
-// - add .error(), catching only 'expected exceptions' (i.e. rejections, not thrown errors)
 // - add possibility for an unhandled-rejections-handler
-// - full coverage by unit tests
-// - much more docs
 // - try to remove mangling of Error's .stack property on rejections with longTraces enabled
 
 import async from "./async";
@@ -24,8 +21,18 @@ export interface Thenable<T> {
 	then<R>(onFulfilled?: (value: T) => R|Thenable<R>, onRejected?: (reason: Error) => R|Thenable<R>): Thenable<R>;
 }
 
+/**
+ * Thrown when a rejected promise is explicitly terminated with `.done()`.
+ */
 export class UnhandledRejectionError extends BaseError {
+	/**
+	 * Original promise rejection reason.
+	 */
 	public reason: any;
+
+	/**
+	 * Trace of rejected promise.
+	 */
 	public trace: Trace;
 
 	constructor(reason: any, trace: Trace) {
@@ -95,8 +102,12 @@ var dummyDoneTrace = new Trace();
  * Combination of a promise and its resolve/reject functions.
  * Created using Promise.defer().
  *
- * Note: most cases are better solved using the Promise constructor,
- * as e.g. exceptions throw will then automatically lead to a rejected promise.
+ * It is generally better (and slightly faster) to use the Promise
+ * constructor to create a promise, as that will also catch any exception
+ * thrown while running the resolver.
+ *
+ * A Deferred can be useful in some scenarios though, e.g. when working with
+ * timers, protocol request/response pairs, etc.
  */
 export interface Deferred<T> {
 	/**
@@ -104,6 +115,7 @@ export interface Deferred<T> {
 	 * function on this object.
 	 */
 	promise: Promise<T>;
+
 	/**
 	 * Resolve corresponding promise.
 	 * The first call to either resolve or reject resolves the promise, any
@@ -112,6 +124,7 @@ export interface Deferred<T> {
 	 * Note: resolving with a rejected Thenable leads to a rejected promise.
 	 */
 	resolve: (value: T|Thenable<T>) => void;
+
 	/**
 	 * Reject corresponding promise.
 	 * The first call to either resolve or reject resolves the promise, any
@@ -122,13 +135,18 @@ export interface Deferred<T> {
 }
 
 /**
- * Combination of a promise and its resolve/reject functions.
+ * Convenience version of Deferred that allows calling resolve() without an
+ * argument.
+ *
+ * Deferred is a combination of a promise and its resolve/reject functions.
  * Created using Promise.defer().
  *
- * Note: most cases are better solved using the Promise constructor,
- * as e.g. exceptions throw will then automatically lead to a rejected promise.
+ * It is generally better (and slightly faster) to use the Promise
+ * constructor to create a promise, as that will also catch any exception
+ * thrown while running the resolver.
  *
- * Convenience interface that allows calling resolve() without an argument.
+ * A Deferred can be useful in some scenarios though, e.g. when working with
+ * timers, protocol request/response pairs, etc.
  */
 export interface VoidDeferred extends Deferred<void> {
 	/**
@@ -150,6 +168,9 @@ var unwrappingPromise: Promise<any> = undefined;
 
 var promiseIdCounter = 0;
 
+/**
+ * Fast, robust, type-safe promise implementation.
+ */
 export class Promise<T> implements Thenable<T> {
 	private _id = promiseIdCounter++;
 	private _state: State = State.Pending;
@@ -157,6 +178,14 @@ export class Promise<T> implements Thenable<T> {
 	private _handlers: Handler<T,any>[] = undefined;
 	private _trace: Trace = undefined;
 
+	/**
+	 * Create new Promise.
+	 *
+	 * Pass a callback that will receive a `resolve()` and `reject()` function
+	 * to seal the promise's fate.
+	 *
+	 * @param  resolver Called with resolve and reject functions
+	 */
 	constructor(
 		resolver: (
 			resolve: (value: T|Thenable<T>) => void,
@@ -221,14 +250,83 @@ export class Promise<T> implements Thenable<T> {
 		}
 	}
 
+	/**
+	 * Run either `onFulfilled` or `onRejected` callbacks when the promise is
+	 * resolved. Returns another promise for the return value of such a
+	 * callback.
+	 *
+	 * The callback will always be called at most once, and always
+	 * asynchronously (i.e. some time after e.g. the `resolver` passed to the
+	 * constructor has resolved the promise).
+	 *
+	 * Any error thrown or rejected promise returned from a callback will cause
+	 * the returned promise to be rejected with that error.
+	 *
+	 * If either or both callbacks are missing, the fulfillment or rejection is
+	 * passed on unmodified.
+	 *
+	 * @param onFulfilled Optional callback called with promise's fulfillment
+	 *                    value iff promise is fulfilled. Callback can return
+	 *                    another value or promise for a value.
+	 * @param onRejected  Optional callback called with promise's rejection
+	 *                    reason iff promise is rejected. Callback can return
+	 *                    another value or promise for a value.
+	 * @return Promise for value returned by either of the callbacks
+	 */
 	public then<R>(
 		onFulfilled?: void,
 		onRejected?: (reason: Error) => R|Thenable<R>
 	): Promise<T|R>;
+	/**
+	 * Run either `onFulfilled` or `onRejected` callbacks when the promise is
+	 * resolved. Returns another promise for the return value of such a
+	 * callback.
+	 *
+	 * The callback will always be called at most once, and always
+	 * asynchronously (i.e. some time after e.g. the `resolver` passed to the
+	 * constructor has resolved the promise).
+	 *
+	 * Any error thrown or rejected promise returned from a callback will cause
+	 * the returned promise to be rejected with that error.
+	 *
+	 * If either or both callbacks are missing, the fulfillment or rejection is
+	 * passed on unmodified.
+	 *
+	 * @param onFulfilled Optional callback called with promise's fulfillment
+	 *                    value iff promise is fulfilled. Callback can return
+	 *                    another value or promise for a value.
+	 * @param onRejected  Optional callback called with promise's rejection
+	 *                    reason iff promise is rejected. Callback can return
+	 *                    another value or promise for a value.
+	 * @return Promise for value returned by either of the callbacks
+	 */
 	public then<R>(
 		onFulfilled: (value: T) => R|Thenable<R>,
 		onRejected?: (reason: Error) => R|Thenable<R>
 	): Promise<R>;
+	/**
+	 * Run either `onFulfilled` or `onRejected` callbacks when the promise is
+	 * resolved. Returns another promise for the return value of such a
+	 * callback.
+	 *
+	 * The callback will always be called at most once, and always
+	 * asynchronously (i.e. some time after e.g. the `resolver` passed to the
+	 * constructor has resolved the promise).
+	 *
+	 * Any error thrown or rejected promise returned from a callback will cause
+	 * the returned promise to be rejected with that error.
+	 *
+	 * If either or both callbacks are missing, the fulfillment or rejection is
+	 * passed on unmodified.
+	 *
+	 * @param onFulfilled Optional callback called with promise's fulfillment
+	 *                    value iff promise is fulfilled. Callback can return
+	 *                    another value or promise for a value.
+	 * @param onRejected  Optional callback called with promise's rejection
+	 *                    reason iff promise is rejected. Callback can return
+	 *                    another value or promise for a value.
+	 * @return Promise for value returned by either of the callbacks
+	 */
 	public then<R>(
 		onFulfilled?: void|((value: T) => R|Thenable<R>),
 		onRejected?: (reason: Error) => R|Thenable<R>
@@ -253,6 +351,25 @@ export class Promise<T> implements Thenable<T> {
 		return slave;
 	}
 
+	/**
+	 * Run either `onFulfilled` or `onRejected` callbacks when the promise is
+	 * resolved. If the callback throws an error or the returned value resolves
+	 * to a rejection, the library will (asynchronously) throw an
+	 * `UnhandledRejectionError` with that error.
+	 *
+	 * The callback will always be called at most once, and always
+	 * asynchronously (i.e. some time after e.g. the `resolver` passed to the
+	 * constructor has resolved the promise).
+	 *
+	 * @param onFulfilled Optional callback called with promise's fulfillment
+	 *                    value iff promise is fulfilled. Any error thrown or
+	 *                    rejection returned will cause an UnhandledRejectionError
+	 *                    to be thrown.
+	 * @param onRejected  Optional callback called with promise's rejection
+	 *                    reason iff promise is rejected. Any error thrown or
+	 *                    rejection returned will cause an UnhandledRejectionError
+	 *                    to be thrown.
+	 */
 	public done<R>(
 		onFulfilled?: (value: T) => void|Thenable<void>,
 		onRejected?: (reason: Error) => void|Thenable<void>
@@ -273,22 +390,45 @@ export class Promise<T> implements Thenable<T> {
 		this._enqueue(onFulfilled, onRejected, undefined, doneTrace);
 	}
 
+	/**
+	 * Convenience helper for `.then(undefined, onRejected)`.
+	 *
+	 * @see `.then()`
+	 *
+	 * @param onRejected  Optional callback called with promise's rejection
+	 *                    reason iff promise is rejected. Callback can return
+	 *                    another value or promise for a value.
+	 * @return Promise for value returned by either of the callbacks
+	 */
 	public catch<R>(onRejected?: (reason: Error) => R|Thenable<R>): Promise<T|R> {
 		return this.then(undefined, onRejected);
 	}
 
+	/**
+	 * @return `true` when promise is fulfilled, `false` otherwise.
+	 */
 	public isFulfilled(): boolean {
 		return this._state === State.Fulfilled;
 	}
 
+	/**
+	 * @return `true` when promise is rejected, `false` otherwise.
+	 */
 	public isRejected(): boolean {
 		return this._state === State.Rejected;
 	}
 
+	/**
+	 * @return `true` when promise is pending (may be resolved to another pending
+	 *         promise), `false` otherwise.
+	 */
 	public isPending(): boolean {
 		return this._state === State.Pending;
 	}
 
+	/**
+	 * @return Fulfillment value if fulfilled, otherwise throws an error.
+	 */
 	public value(): T {
 		if (!this.isFulfilled()) {
 			throw new Error("Promise is not fulfilled");
@@ -296,6 +436,9 @@ export class Promise<T> implements Thenable<T> {
 		return this._result;
 	}
 
+	/**
+	 * @return Rejection reason if rejected, otherwise throws an error.
+	 */
 	public reason(): any {
 		if (!this.isRejected()) {
 			throw new Error("Promise is not rejected");
@@ -303,10 +446,16 @@ export class Promise<T> implements Thenable<T> {
 		return this._result;
 	}
 
+	/**
+	 * @return A human-readable representation of the promise and its status.
+	 */
 	public inspect(): string {
 		return this.toString();
 	}
 
+	/**
+	 * @return A human-readable representation of the promise and its status.
+	 */
 	public toString(): string {
 		var state: string;
 		switch (this._state) {
@@ -317,6 +466,16 @@ export class Promise<T> implements Thenable<T> {
 		return `[Promise ${this._id}: ${state}]`;
 	}
 
+	/**
+	 * Create a promise that resolves with the same value of this promise, after
+	 * `ms` milliseconds. The timer will start when the current promise is
+	 * resolved.
+	 * If the current promise is rejected, the resulting promise is also
+	 * rejected, without waiting for the timer.
+	 *
+	 * @param ms Number of milliseconds to wait before resolving
+	 * @return Promise that fulfills `ms` milliseconds after this promise fulfills
+	 */
 	public delay(ms: number): Promise<T> {
 		return this.then((value: T) => {
 			return new Promise<T>((resolve) => {
@@ -325,22 +484,77 @@ export class Promise<T> implements Thenable<T> {
 		});
 	}
 
+	/**
+	 * Create an immediately resolved promise (in case of a 'normal' value), or
+	 * a promise that 'follows' another `Thenable` (e.g. a Promise from another
+	 * library).
+	 *
+	 * @param value Value (or Thenable for value) for returned promise
+	 * @return Promise resolved to `value`
+	 */
 	public static resolve<R>(value: R|Thenable<R>): Promise<R>;
+	/**
+	 * Create an immediately resolved void-promise.
+	 *
+	 * @return Promise resolved to void (i.e. `undefined`)
+	 */
 	public static resolve(): Promise<void>;
+	/**
+	 * Create an immediately resolved promise (in case of a 'normal' value), or
+	 * a promise that 'follows' another `Thenable` (e.g. a Promise from another
+	 * library).
+	 *
+	 * @param value Value (or Thenable for value) for returned promise
+	 * @return Promise resolved to `value`
+	 */
 	public static resolve<R>(value?: R|Thenable<R>): Promise<void|R> {
 		var p = new Promise(internalResolver);
 		p._resolve(value);
 		return p;
 	}
 
+	/**
+	 * Create an immediately rejected void-promise.
+	 *
+	 * Note: to create a rejected promise of another type, use e.g.
+	 * `Promise.reject<number>(myError)`
+	 *
+	 * @param reason Error object to set rejection reason
+	 * @return Void promise resolved to rejection `reason`
+	 */
 	public static reject(reason: Error): Promise<void>;
+	/**
+	 * Create an immediately rejected promise.
+	 *
+	 * @param reason Error object to set rejection reason
+	 * @return Promise resolved to rejection `reason`
+	 */
 	public static reject<T>(reason: Error): Promise<T>;
+	/**
+	 * Create an immediately rejected promise.
+	 *
+	 * Note: to create a rejected promise of a certain type, use e.g.
+	 * `Promise.reject<number>(myError)`
+	 *
+	 * @param reason Error object to set rejection reason
+	 * @return Promise resolved to rejection `reason`
+	 */
 	public static reject<T>(reason: Error): Promise<T> {
 		var p = new Promise(internalResolver);
 		p._reject(reason);
 		return p;
 	}
 
+	/**
+	 * Return a promise for an array of all resolved input promises (or values).
+	 * If any of the input promises is rejected, the returned promise is
+	 * rejected with that reason.
+	 * When passing an empty array, the promises is immediately resolved to an
+	 * empty array.
+	 *
+	 * @param thenables Array of values or promises for them
+	 * @return promise that resolves with array of all resolved values
+	 */
 	public static all<X>(thenables: (X|Thenable<X>)[]): Promise<X[]> {
 		return new Promise<X[]>((resolve, reject): void => {
 			assert(Array.isArray(thenables), "thenables must be an Array");
@@ -369,6 +583,14 @@ export class Promise<T> implements Thenable<T> {
 		});
 	}
 
+	/**
+	 * Return a promise that resolves to the fulfillment or rejection of the
+	 * first input promise that resolves.
+	 * When passing an empty array, the promise will never resolve.
+	 *
+	 * @param thenables Array of values or promises for them
+	 * @return promise that resolves to first resolved input promise
+	 */
 	public static race<X>(thenables: (X|Thenable<X>)[]): Promise<X> {
 		return new Promise<X>((resolve, reject): void => {
 			assert(Array.isArray(thenables), "thenables must be an Array");
@@ -380,8 +602,47 @@ export class Promise<T> implements Thenable<T> {
 		});
 	}
 
+	/**
+	 * Create tuple of a promise and its resolve and reject functions.
+	 *
+	 * It is generally better (and slightly faster) to use the Promise
+	 * constructor to create a promise, as that will also catch any exception
+	 * thrown while running the resolver.
+	 *
+	 * A Deferred can be useful in some scenarios though, e.g. when working with
+	 * timers, protocol request/response pairs, etc.
+	 *
+	 * @return Deferred object, containing unresolved promise and its
+	 *         resolve/reject functions
+	 */
 	public static defer(): VoidDeferred;
+	/**
+	 * Create tuple of a promise and its resolve and reject functions.
+	 *
+	 * It is generally better (and slightly faster) to use the Promise
+	 * constructor to create a promise, as that will also catch any exception
+	 * thrown while running the resolver.
+	 *
+	 * A Deferred can be useful in some scenarios though, e.g. when working with
+	 * timers, protocol request/response pairs, etc.
+	 *
+	 * @return Deferred object, containing unresolved promise and its
+	 *         resolve/reject functions
+	 */
 	public static defer<X>(): Deferred<X>;
+	/**
+	 * Create tuple of a promise and its resolve and reject functions.
+	 *
+	 * It is generally better (and slightly faster) to use the Promise
+	 * constructor to create a promise, as that will also catch any exception
+	 * thrown while running the resolver.
+	 *
+	 * A Deferred can be useful in some scenarios though, e.g. when working with
+	 * timers, protocol request/response pairs, etc.
+	 *
+	 * @return Deferred object, containing unresolved promise and its
+	 *         resolve/reject functions
+	 */
 	public static defer<X>(): Deferred<any> {
 		var resolve: (v: any) => void;
 		var reject: (r: Error) => void;
@@ -396,8 +657,39 @@ export class Promise<T> implements Thenable<T> {
 		};
 	}
 
+	/**
+	 * Create a promise that resolves to a void value (`undefined`) after `ms`
+	 * milliseconds.
+	 *
+	 * @param ms Number of milliseconds to wait before resolving
+	 * @return Promise that fulfills with a void value after `ms` milliseconds
+	 */
 	public static delay(ms: number): Promise<void>;
+	/**
+	 * Create a promise that resolves to the given value (or promise for a
+	 * value) after `ms` milliseconds. The timer will start when the given value
+	 * is resolved.
+	 * If the input value is a rejected promise, the resulting promise is also
+	 * rejected, without waiting for the timer.
+	 *
+	 * @param value Value or promise for value to be delayed
+	 * @param ms Number of milliseconds to wait before resolving
+	 * @return Promise that fulfills `ms` milliseconds after given (promise for)
+	 *         value is fulfilled
+	 */
 	public static delay<R>(value: R|Thenable<R>, ms: number): Promise<R>;
+	/**
+	 * Create a promise that resolves to the given value (or promise for a
+	 * value) after `ms` milliseconds. The timer will start when the given value
+	 * is resolved.
+	 * If the input value is a rejected promise, the resulting promise is also
+	 * rejected, without waiting for the timer.
+	 *
+	 * @param value Value or promise for value to be delayed
+	 * @param ms Number of milliseconds to wait before resolving
+	 * @return Promise that fulfills `ms` milliseconds after given (promise for)
+	 *         value is fulfilled
+	 */
 	public static delay<R>(...args: any[]): Promise<void|R> {
 		if (arguments[1] === undefined) {
 			// delay(ms)
@@ -410,10 +702,38 @@ export class Promise<T> implements Thenable<T> {
 		return Promise.resolve(arguments[0]).delay(arguments[1]);
 	}
 
+	/**
+	 * Enable or disable long stack trace tracking on promises.
+	 *
+	 * This allows tracing a promise chain through the various asynchronous
+	 * actions in a program. For example, when a promise is rejected, the last
+	 * few locations of any preceding promises are included in the error's stack
+	 * trace.
+	 *
+	 * Note: it is possible to enable/disable long tracing at runtime.
+	 *
+	 * When chaining off of a promise that was created while tracing was enabled
+	 * (e.g. through `.then()`), all children will also have long traces, even
+	 * when tracing is turned off. This allows to trace just some promise paths.
+	 *
+	 * Tracing is disabled by default as it incurs a memory and performance
+	 * overhead, although it's still faster with tracing than some major
+	 * promise libraries without tracing, so don't worry too much about it.
+	 *
+	 * @param enable Set to true to enable long traces, false to disable
+	 */
 	public static setLongTraces(enable: boolean): void {
 		longTraces = enable;
 	}
 
+	/**
+	 * Set trace function that is called for internal state changes of a
+	 * promise.
+	 * Call with `undefined` or `null` to disable such tracing (this is the
+	 * default).
+	 *
+	 * @param tracer Callback called for various stages during lifetime of a promise
+	 */
 	public static setTracer(tracer: (promise: Promise<any>, msg: string) => void): void {
 		if (typeof tracer === "function") {
 			trace = tracer;
@@ -422,6 +742,19 @@ export class Promise<T> implements Thenable<T> {
 		}
 	}
 
+	/**
+	 * Recursively flush the async callback queue until all `.then()` and
+	 * `.done()` callbacks for fulfilled and rejected Promises have been called.
+	 * Useful in e.g. unit tests to advance program state to the next 'tick'.
+	 *
+	 * Note that if e.g. `.done()` encounters a rejected promise, `flush()` will
+	 * immediately throw an error (e.g. `UnhandledRejectionError`).
+	 * It is safe to call `flush()` again afterwards, but it will also be called
+	 * automatically by the async queue on the next 'real' tick.
+	 *
+	 * It is an error to call `flush()` while it is already running (e.g. from
+	 * a `.then()` callback).
+	 */
 	public static flush(): void {
 		async.flush();
 	}
