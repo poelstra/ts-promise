@@ -391,17 +391,113 @@ export class Promise<T> implements Thenable<T> {
 	}
 
 	/**
+	 * Catch all errors in case promise is rejected.
+	 *
+	 * The returned promise is resolved with the output of the callback, so it
+	 * is possible to re-throw the error, but also to return a 'replacement'
+	 * value that should be used instead.
+	 *
 	 * Convenience helper for `.then(undefined, onRejected)`.
 	 *
-	 * @see `.then()`
-	 *
-	 * @param onRejected  Optional callback called with promise's rejection
-	 *                    reason iff promise is rejected. Callback can return
-	 *                    another value or promise for a value.
-	 * @return Promise for value returned by either of the callbacks
+	 * @param onRejected  Callback called with promise's rejection reason iff
+	 *                    promise is rejected. Callback can return another value
+	 *                    or promise for a value.
+	 * @return Promise for original value, or 'replaced' value in case of error
 	 */
-	public catch<R>(onRejected?: (reason: Error) => R|Thenable<R>): Promise<T|R> {
-		return this.then(undefined, onRejected);
+	public catch<R>(onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	/**
+	 * Catch only errors of the specified class in case promise is rejected.
+	 *
+	 * The returned promise is resolved with the output of the callback, so it
+	 * is possible to re-throw the error, but also to return a 'replacement'
+	 * value that should be used instead.
+	 *
+	 * @param predicate   Error class to match (e.g. RangeError)
+	 * @param onRejected  Callback called with promise's rejection reason iff
+	 *                    promise is rejected. Callback can return another value
+	 *                    or promise for a value.
+	 * @return Promise for original value, or 'replaced' value in case of error
+	 */
+	public catch<R>(predicate: typeof Error, onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	/**
+	 * Catch only errors of the specified classes in case promise is rejected.
+	 *
+	 * The returned promise is resolved with the output of the callback, so it
+	 * is possible to re-throw the error, but also to return a 'replacement'
+	 * value that should be used instead.
+	 *
+	 * @param predicate   Error classes to match (e.g. [RangeError, TypeError])
+	 * @param onRejected  Callback called with promise's rejection reason iff
+	 *                    promise is rejected. Callback can return another value
+	 *                    or promise for a value.
+	 * @return Promise for original value, or 'replaced' value in case of error
+	 */
+	public catch<R>(predicate: (typeof Error)[], onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	/**
+	 * Catch only errors that match the predicate function in case promise is
+	 * rejected.
+	 * The callback will be called if the predicate function returns a truthy
+	 * value for the given rejection reason.
+	 *
+	 * The returned promise is resolved with the output of the callback, so it
+	 * is possible to re-throw the error, but also to return a 'replacement'
+	 * value that should be used instead.
+	 *
+	 * @param predicate   If `predicate(reason)` returns true for given error,
+	 *                    onRejected is called
+	 * @param onRejected  Callback called with promise's rejection reason iff
+	 *                    promise is rejected. Callback can return another value
+	 *                    or promise for a value.
+	 * @return Promise for original value, or 'replaced' value in case of error
+	 */
+	public catch<R>(predicate: (reason: Error) => boolean, onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	/**
+	 * Catch only errors that match predicate in case promise is rejected.
+	 * Predicate can be an Error (sub-)class, array of Error classes, or a
+	 * function that can return true to indicate a match.
+	 *
+	 * The returned promise is resolved with the output of the callback, so it
+	 * is possible to re-throw the error, but also to return a 'replacement'
+	 * value that should be used instead.
+	 *
+	 * @param predicate   Optional Error class, array of Error classes or match
+	 *                    function
+	 * @param onRejected  Callback called with promise's rejection reason iff
+	 *                    promise is rejected. Callback can return another value
+	 *                    or promise for a value.
+	 * @return Promise for original value, or 'replaced' value in case of error
+	 */
+	public catch<R>(...args: any[]): Promise<T|R> {
+		if (arguments.length === 1) {
+			let onRejected: (reason: Error) => R|Thenable<R> = arguments[0];
+			return this.then(undefined, onRejected);
+		} else {
+			let predicate: any = arguments[0];
+			let onRejected: (reason: Error) => R|Thenable<R> = arguments[1];
+			return this.then(undefined, (reason: Error) => {
+				let match = false;
+				if (typeof predicate === "function") {
+					if (predicate.prototype instanceof Error || predicate === Error) {
+						match = reason instanceof predicate;
+					} else {
+						match = predicate(reason);
+					}
+				} else if (Array.isArray(predicate)) {
+					for (let i = 0; i < predicate.length; i++) {
+						if (reason instanceof predicate[i]) {
+							match = true;
+							break;
+						}
+					}
+				} else {
+					throw new TypeError("invalid predicate to .catch(), got " + typeof predicate);
+				}
+				if (match) {
+					return onRejected(reason);
+				}
+				return Promise.reject<T|R>(reason);
+			});
+		}
 	}
 
 	/**

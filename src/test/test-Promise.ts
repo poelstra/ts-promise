@@ -333,8 +333,10 @@ describe("Promise", (): void => {
 		// All other cases already handled by Promise/A+ tests
 
 		it("ignores no handler, returns Promise of same type", () => {
+			// Pathological case, only tested for correctness, typing requires
+			// passing the callback
 			let p = Promise.resolve(42);
-			let actual = p.catch<number>();
+			let actual = p.catch<number>(undefined);
 			let expected: Promise<number>;
 			expected = actual;
 			actual = expected;
@@ -370,6 +372,73 @@ describe("Promise", (): void => {
 			let expected: Promise<number>;
 			expected = actual;
 			actual = expected;
+		});
+
+		describe("with predicate", () => {
+			let plainError = new Error("boom");
+			let unspecifiedError = new RangeError("boom");
+			let specifiedError1 = new EvalError("boom");
+			let specifiedError2 = new URIError("boom");
+			let caughtSentinel = { caughtSentinel: true };
+			function catcher(err: Error): any {
+				return caughtSentinel;
+			}
+			function matcher(reason: Error): boolean {
+				return reason instanceof EvalError;
+			}
+			it("catches specified Error", () => {
+				let p = Promise.reject(plainError).catch(Error, catcher);
+				Promise.flush();
+				expect(p.value()).to.equal(caughtSentinel);
+			});
+			it("catches specified error", () => {
+				let p = Promise.reject(specifiedError1).catch(EvalError, catcher);
+				Promise.flush();
+				expect(p.value()).to.equal(caughtSentinel);
+			});
+			it("passes unspecified error array", () => {
+				let p = Promise.reject(unspecifiedError).catch(EvalError, catcher);
+				Promise.flush();
+				expect(p.reason()).to.equal(unspecifiedError);
+			});
+			it("catches specified error array", () => {
+				let p1 = Promise.reject(specifiedError1).catch([EvalError, URIError], catcher);
+				let p2 = Promise.reject(specifiedError2).catch([EvalError, URIError], catcher);
+				Promise.flush();
+				expect(p1.value()).to.equal(caughtSentinel);
+				expect(p2.value()).to.equal(caughtSentinel);
+			});
+			it("passes unspecified error array", () => {
+				let p = Promise.reject(unspecifiedError).catch([EvalError, URIError], catcher);
+				Promise.flush();
+				expect(p.reason()).to.equal(unspecifiedError);
+			});
+			it("passes empty error array", () => {
+				let p = Promise.reject(unspecifiedError).catch([], catcher);
+				Promise.flush();
+				expect(p.reason()).to.equal(unspecifiedError);
+			});
+			it("catches function matches", () => {
+				let p = Promise.reject(specifiedError1).catch(matcher, catcher);
+				Promise.flush();
+				expect(p.value()).to.equal(caughtSentinel);
+			});
+			it("passes function misses", () => {
+				let p = Promise.reject(unspecifiedError).catch(matcher, catcher);
+				Promise.flush();
+				expect(p.reason()).to.equal(unspecifiedError);
+			});
+			it("rejects when testing invalid predicate", () => {
+				let p1 = Promise.reject(unspecifiedError).catch(<any>"foo", catcher);
+				let p2 = Promise.reject(unspecifiedError).catch(<any>undefined, catcher);
+				let p3 = Promise.reject(unspecifiedError).catch(<any>null, catcher);
+				let p4 = Promise.reject(unspecifiedError).catch(<any>{}, catcher);
+				Promise.flush();
+				expect(p1.reason()).to.be.instanceof(TypeError, "invalid predicate");
+				expect(p2.reason()).to.be.instanceof(TypeError, "invalid predicate");
+				expect(p3.reason()).to.be.instanceof(TypeError, "invalid predicate");
+				expect(p4.reason()).to.be.instanceof(TypeError, "invalid predicate");
+			});
 		});
 	});
 
