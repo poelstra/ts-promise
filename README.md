@@ -253,11 +253,15 @@ A proper fix is in the works.
 
 # Changelog
 
+0.2.1 (2015-06-24):
+- Improve stack trace for UnhandledRejectionError
+- Allow specifying Error classes with different constructor arguments in `.catch()`
+
 0.2.0 (2015-06-23):
 - Allow passing predicate to `.catch()` (Error class or array of them, or a
   custom matching function)
 - Add `.return()` and `.throw()` helpers
-- Document all public members of Promise and UndhandledRejectionError
+- Document all public members of Promise and UnhandledRejectionError
 - Stricter typing for `Promise.reject()`, no longer returns `Promise<any>` by
   default
 - Require `.then()` and `.catch()` to have first callback (for typing only,
