@@ -11,7 +11,9 @@
 
 "use strict";
 
-require("source-map-support").install();
+require("source-map-support").install({
+	handleUncaughtExceptions: false
+});
 
 import assert = require("assert");
 import chai = require("chai");
@@ -922,15 +924,23 @@ describe("Promise", (): void => {
 
 describe("UnhandledRejectionError", () => {
 	describe("constructor()", () => {
+		var e = new Error("boom");
 		it("includes reason in message", () => {
-			var e = new Error("boom");
 			var ure = new UnhandledRejectionError(e, new Trace());
 			expect(ure.message).to.contain("Error: boom");
 		});
 		it("sets its .reason property to the original error", () => {
-			var e = new Error("boom");
 			var ure = new UnhandledRejectionError(e, new Trace());
 			expect(ure.reason).to.equal(e);
+		});
+		it("replaces its stack with that of original error", () => {
+			var ure = new UnhandledRejectionError(e, new Trace());
+			expect(ure.stack).to.contain((<any>e).stack);
+		});
+		it("does not crash if reason doesn't have a stack", () => {
+			let ure1 = new UnhandledRejectionError(undefined, new Trace());
+			let ure2 = new UnhandledRejectionError(null, new Trace());
+			let ure3 = new UnhandledRejectionError({}, new Trace());
 		});
 	});
 });

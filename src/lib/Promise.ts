@@ -38,7 +38,18 @@ export class UnhandledRejectionError extends BaseError {
 	constructor(reason: any, trace: Trace) {
 		super("UnhandledRejectionError", "unhandled rejection: " + reason);
 		this.reason = reason;
+		// TODO: Find a better way to merge the location of `.done()` in the
+		// trace, because nobody will look for this property...
 		this.trace = trace;
+		// In case we have a reason, and it has a stack: use it instead of our
+		// own stack, as it's more helpful to see where the original error was
+		// thrown, than where it was thrown inside the promise lib.
+		if (this.reason && typeof this.reason === "object") {
+			let stack = this.reason.stack;
+			if (typeof stack === "string") {
+				this.stack = "UnhandledRejectionError: " + stack;
+			}
+		}
 	}
 }
 
@@ -1093,7 +1104,9 @@ export class Promise<T> implements Thenable<T> {
 				// all was good.
 				if (this._state === State.Rejected) {
 					let unhandled = new UnhandledRejectionError(this._result, handler.done);
-					throw unhandled; // TODO Allow intercepting these
+					// TODO Allow intercepting these
+					// Leave the comment after the throw: may show up in source line in node
+					throw unhandled; // Unhandled exception caught by .done()
 				}
 				return;
 			}
@@ -1112,7 +1125,9 @@ export class Promise<T> implements Thenable<T> {
 
 				// Wrap in UnhandledRejectionError
 				let unhandled = new UnhandledRejectionError(e, handler.done);
-				throw unhandled; // TODO Allow intercepting these
+				// TODO Allow intercepting these
+				// Leave the comment after the throw: may show up in source line in node
+				throw unhandled; // Unhandled exception caught by .done()
 			}
 			return;
 		}
