@@ -16,6 +16,7 @@ require("source-map-support").install();
 import assert = require("assert");
 import chai = require("chai");
 import Trace from "../lib/Trace";
+import BaseError from "../lib/BaseError";
 import { Promise, Thenable, UnhandledRejectionError, Deferred } from "../lib/Promise";
 
 import expect = chai.expect;
@@ -473,6 +474,15 @@ describe("Promise", (): void => {
 				expect(p2.reason()).to.be.instanceof(TypeError, "invalid predicate");
 				expect(p3.reason()).to.be.instanceof(TypeError, "invalid predicate");
 				expect(p4.reason()).to.be.instanceof(TypeError, "invalid predicate");
+			});
+			it("accepts various error classes as predicate", () => {
+				let p1 = Promise.reject(new Error()).catch(Error, catcher);
+				let p2 = Promise.reject(new BaseError("", "")).catch(BaseError, catcher);
+				let p3 = Promise.reject(new UnhandledRejectionError(undefined, undefined)).catch(UnhandledRejectionError, catcher);
+				Promise.flush();
+				expect(p1.value()).to.equal(caughtSentinel);
+				expect(p2.value()).to.equal(caughtSentinel);
+				expect(p3.value()).to.equal(caughtSentinel);
 			});
 		});
 	});

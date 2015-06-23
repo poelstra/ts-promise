@@ -169,6 +169,15 @@ var unwrappingPromise: Promise<any> = undefined;
 var promiseIdCounter = 0;
 
 /**
+ * Generic Error class descriptor.
+ *
+ * Allows to pass classes to e.g. `Promise.catch()` which derive from Error.
+ */
+export interface ErrorClass {
+	new (...args: any[]): Error;
+}
+
+/**
  * Fast, robust, type-safe promise implementation.
  */
 export class Promise<T> implements Thenable<T> {
@@ -367,7 +376,7 @@ export class Promise<T> implements Thenable<T> {
 	 *                    or promise for a value.
 	 * @return Promise for original value, or 'replaced' value in case of error
 	 */
-	public catch<R>(predicate: typeof Error, onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	public catch<R>(predicate: ErrorClass, onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
 	/**
 	 * Catch only errors of the specified classes in case promise is rejected.
 	 *
@@ -381,7 +390,7 @@ export class Promise<T> implements Thenable<T> {
 	 *                    or promise for a value.
 	 * @return Promise for original value, or 'replaced' value in case of error
 	 */
-	public catch<R>(predicate: (typeof Error)[], onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	public catch<R>(predicate: ErrorClass[], onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
 	/**
 	 * Catch only errors that match the predicate function in case promise is
 	 * rejected.
