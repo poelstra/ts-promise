@@ -624,6 +624,23 @@ describe("Promise", (): void => {
 			expect(caught.trace.inspect()).to.not.contain("no trace");
 			Promise.setLongTraces(false);
 		});
+		it("should mention there's no stack trace when there is none", () => {
+			// This can happen e.g. on "RangeError: Maximum call stack size exceeded",
+			// (at least on node v0.10.26 it did)
+			Promise.resolve().then(() => {
+				let e = new Error("boom");
+				(<any>e).stack = undefined;
+				throw e;
+			}).done();
+			var caught: UnhandledRejectionError;
+			try {
+				Promise.flush();
+			} catch(e) {
+				caught = e;
+			}
+			expect(caught).to.be.instanceof(UnhandledRejectionError);
+			expect(caught.stack).to.equal("UnhandledRejectionError: Error: boom");
+		});
 	}); // #done()
 
 	describe("#isFulfilled()", () => {

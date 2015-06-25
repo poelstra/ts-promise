@@ -44,12 +44,13 @@ export class UnhandledRejectionError extends BaseError {
 		// In case we have a reason, and it has a stack: use it instead of our
 		// own stack, as it's more helpful to see where the original error was
 		// thrown, than where it was thrown inside the promise lib.
-		if (this.reason && typeof this.reason === "object") {
-			let stack = this.reason.stack;
-			if (typeof stack === "string") {
-				this.stack = "UnhandledRejectionError: " + stack;
-			}
+		// In case we don't have a stack, explicitly state so, to not let people
+		// chase a problem in the promise lib that isn't there...
+		let stack = this.reason && typeof this.reason === "object" && this.reason.stack;
+		if (typeof stack !== "string") {
+			stack = String(reason);
 		}
+		this.stack = "UnhandledRejectionError: " + stack;
 	}
 }
 
@@ -972,10 +973,13 @@ export class Promise<T> implements Thenable<T> {
 			this._result.trace = this._trace;
 			// TODO: Meh, this always accesses '.stack', which is supposed to be expensive
 			var originalStack = this._result.stack;
-			Object.defineProperty(this._result, "stack", {
-				enumerable: false,
-				get: (): string => originalStack + "\n  from Promise at:\n" + this._trace.inspect()
-			});
+			// Stack may be undefined if e.g. a Stack Overflow occurred
+			if (originalStack) {
+				Object.defineProperty(this._result, "stack", {
+					enumerable: false,
+					get: (): string => originalStack + "\n  from Promise at:\n" + this._trace.inspect()
+				});
+			}
 		}
 		this._flush();
 	}
