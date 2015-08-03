@@ -22,6 +22,38 @@ export interface Thenable<T> {
 }
 
 /**
+ * A ts-promise implements the 'synchronous inspection' interface which allows
+ * to synchronously determine the promise's current state.
+ */
+export interface Inspection<T> {
+	/**
+	* @return `true` when promise is fulfilled, `false` otherwise.
+	*/
+	isFulfilled(): boolean;
+
+	/**
+	* @return `true` when promise is rejected, `false` otherwise.
+	*/
+	isRejected(): boolean;
+
+	/**
+	* @return `true` when promise is pending (may be resolved to another pending
+	*         promise), `false` otherwise.
+	*/
+	isPending(): boolean;
+
+	/**
+	* @return Fulfillment value if fulfilled, otherwise throws an error.
+	*/
+	value(): T;
+
+	/**
+	* @return Rejection reason if rejected, otherwise throws an error.
+	*/
+	reason(): any;
+}
+
+/**
  * Thrown when a rejected promise is explicitly terminated with `.done()`.
  */
 export class UnhandledRejectionError extends BaseError {
@@ -192,7 +224,7 @@ export interface ErrorClass {
 /**
  * Fast, robust, type-safe promise implementation.
  */
-export class Promise<T> implements Thenable<T> {
+export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private _id = promiseIdCounter++;
 	private _state: State = State.Pending;
 	private _result: any = undefined; // Can be fulfillment value or rejection reason
