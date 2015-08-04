@@ -275,6 +275,11 @@ A proper fix is in the works.
 
 # Changelog
 
+0.2.2 (2015-08-04):
+- Implement `.finally()` (#3)
+- Add `Inspection<T>` interface (#4)
+- Don't confuse users by showing our internal stack trace when Node didn't provide one for UnhandledRejectionError
+
 0.2.1 (2015-06-24):
 - Improve stack trace for UnhandledRejectionError
 - Allow specifying Error classes with different constructor arguments in `.catch()`
