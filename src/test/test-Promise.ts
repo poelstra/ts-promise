@@ -19,9 +19,11 @@ import assert = require("assert");
 import chai = require("chai");
 import Trace from "../lib/Trace";
 import BaseError from "../lib/BaseError";
-import { Promise, Thenable, UnhandledRejectionError, Deferred } from "../lib/Promise";
+import { Promise, Thenable, UnhandledRejectionError, Deferred, Inspection } from "../lib/Promise";
 
 import expect = chai.expect;
+
+let boomError = new Error("boom");
 
 describe("Promise", (): void => {
 
@@ -485,6 +487,105 @@ describe("Promise", (): void => {
 				expect(p1.value()).to.equal(caughtSentinel);
 				expect(p2.value()).to.equal(caughtSentinel);
 				expect(p3.value()).to.equal(caughtSentinel);
+			});
+		});
+	});
+
+	describe("#finally()", (): void => {
+		let called: Promise<number>;
+		let p: Promise<number>;
+
+		beforeEach(() => {
+			called = undefined;
+		});
+
+		afterEach(() => {
+			expect(called).to.equal(p);
+		});
+
+		describe("on fulfilled promise", () => {
+			beforeEach(() => {
+				p = Promise.resolve(42);
+			});
+
+			it("resolves to original value for void return", () => {
+				let result = p.finally((resolved) => { called = resolved; });
+				Promise.flush();
+				expect(result.value()).to.equal(42);
+			});
+
+			it("waits for returned promise, then resolves to original value", () => {
+				let d = Promise.defer();
+				let result = p.finally((resolved) => { called = resolved; return d.promise; });
+				Promise.flush();
+				expect(result.isPending()).to.equal(true);
+				expect(called).to.equal(p);
+
+				d.resolve();
+				Promise.flush();
+				expect(result.value()).to.equal(42);
+			});
+
+			it("resolves to error on thrown error", () => {
+				let result = p.finally((resolved) => {
+					called = resolved;
+					throw boomError;
+				});
+				Promise.flush();
+				expect(result.reason()).to.equal(boomError);
+			});
+
+			it("resolves to error on rejected promise", () => {
+				let result = p.finally((resolved) => {
+					called = resolved;
+					return Promise.reject(boomError);
+				});
+				Promise.flush();
+				expect(result.reason()).to.equal(boomError);
+			});
+		});
+
+		describe("on rejected promise", () => {
+			let origErr = new Error("original error");
+
+			beforeEach(() => {
+				p = Promise.reject<number>(origErr);
+			});
+
+			it("resolves to original error for void return", () => {
+				let result = p.finally((resolved) => { called = resolved; });
+				Promise.flush();
+				expect(result.reason()).to.equal(origErr);
+			});
+
+			it("waits for returned promise, then resolves to original error", () => {
+				let d = Promise.defer();
+				let result = p.finally((resolved) => { called = resolved; return d.promise; });
+				Promise.flush();
+				expect(result.isPending()).to.equal(true);
+				expect(called).to.equal(p);
+
+				d.resolve();
+				Promise.flush();
+				expect(result.reason()).to.equal(origErr);
+			});
+
+			it("resolves to new error on thrown error", () => {
+				let result = p.finally((resolved) => {
+					called = resolved;
+					throw boomError;
+				});
+				Promise.flush();
+				expect(result.reason()).to.equal(boomError);
+			});
+
+			it("resolves to new error on rejected promise", () => {
+				let result = p.finally((resolved) => {
+					called = resolved;
+					return Promise.reject(boomError);
+				});
+				Promise.flush();
+				expect(result.reason()).to.equal(boomError);
 			});
 		});
 	});

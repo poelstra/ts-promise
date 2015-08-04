@@ -503,6 +503,39 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
+	 * Asynchronous equivalent of try { } finally { }.
+	 *
+	 * Runs `handler` when promise resolves (fulfilled or rejected).
+	 * Handler is passed the current promise (which is guaranteed to be
+	 * resolved), and can be interrogated with e.g. `isFulfilled()`, `.value()`,
+	 * etc.
+	 *
+	 * When `handler` returns `undefined` or its promise is fulfilled, the
+	 * promise from `finally()` is resolved to the original promise's resolved
+	 * value or rejection reason.
+	 * If `handler` throws an error or returns a rejection, the result of
+	 * `finally()` will be rejected with that error.
+	 *
+	 * Example:
+	 * someLenghtyOperation().finally((result) => {
+	 *   if (result.isFulfilled()) {
+	 *     console.log("succeeded");
+	 *   } else {
+	 *     console.log("failed", result.reason());
+	 *   }
+	 * });
+	 *
+	 * @param  handler [description]
+	 * @return promise with same value/reason as this one, after `handler`'s
+	 *         result (if any) has been fulfilled, or a promise rejected with
+	 *         `handler`'s error if it threw one or returned a rejection.
+	 */
+	public finally(handler: (result: Promise<T>) => void|Thenable<void>): Promise<T> {
+		let runner = () => handler(this);
+		return this.then(runner, runner).return(this);
+	}
+
+	/**
 	 * @return `true` when promise is fulfilled, `false` otherwise.
 	 */
 	public isFulfilled(): boolean {

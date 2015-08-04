@@ -183,6 +183,25 @@ Methods on Promise instances:
   chain is a rejected Promise (`.reason` property of the error).
   Note that it is technically safe to 'continue' the program after e.g. catching
   the error through Node's `uncaughtException`, or when running in a browser.
+- `finally(handler: (result: Promise<T>) => void|Thenable<void>): Promise<T>`
+  Asynchronous equivalent of try { } finally { }.
+  Runs `handler` when promise resolves (fulfilled or rejected).
+  Handler is passed the current promise (which is guaranteed to be
+  resolved), and can be interrogated with e.g. `isFulfilled()`, `.value()`,
+  etc.
+  When `handler` returns `undefined` or its promise is fulfilled, the
+  promise from `finally()` is resolved to the original promise's resolved
+  value or rejection reason.
+  If `handler` throws an error or returns a rejection, the result of
+  `finally()` will be rejected with that error.
+  Example:
+      someLenghtyOperation().finally((result) => {
+          if (result.isFulfilled()) {
+              console.log("succeeded");
+          } else {
+              console.log("failed", result.reason());
+          }
+      });
 - `isFulfilled(): boolean`
   Returns true when promise is fulfilled, false otherwise.
 - `isRejected(): boolean`
