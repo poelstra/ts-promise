@@ -103,10 +103,13 @@ Error: my error
 
 # Docs
 
-Solid documentation is still on the TODO.
+All public methods and interfaces have JSDoc comments, so if your favorite IDE
+supports these, you'll have instant inline documentation.
 
 That said, the library's interface should be very unsurprising: basically ES6
 Promises with some extras.
+
+For your convenience, here's a list of what's available on Promise.
 
 Static methods on Promise:
 - `constructor(resolver: (resolve: (value: T | Thenable<T>) => void, reject: (reason: Error) => void) => void)`
