@@ -132,6 +132,26 @@ interface RejectionHandler<R> {
 	(reason: Error): R|Thenable<R>;
 }
 
+/**
+ * Subscription to be notified when promise resolves.
+ *
+ * When a Handler is attached to an unresolved promise, it's added to its queue,
+ * which is flushed as soon as the promise resolves.
+ * When a Handler is attached to a resolved promise, it's scheduled immediately
+ * (but still asynchronously).
+ *
+ * A Handler is used for 3 different cases:
+ * 1. calling the onFulfilled/onRejected callbacks of .then()
+ * 2. calling the onFulfilled/onRejected callbacks of .done()
+ * 3. waiting for a promise returned from an onFulfilled/onRejected callback to
+ *    be resolved (i.e. that promise is 'following' us)
+ *
+ * `promise` is always the promise that was resolved, i.e. the 'source'
+ * onFulfilled/onRejected are the callbacks of the .then()/.done(), or both
+ * `undefined` in case of a follower (case 3).
+ * In all cases, `slave` is the promise that depends on our result, and/or the
+ * callback's result.
+ */
 interface Handler<T, R> {
 	promise: Promise<T>;
 	onFulfilled: FulfillmentHandler<T, R>;
@@ -1131,6 +1151,12 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		}
 	}
 
+	/**
+	 * Schedule any pending .then()/.done() callbacks and follower-promises to
+	 * be called/resolved.
+	 * Clears our queue, any callbacks/followers attached after this will be
+	 * scheduled without going through our handlers queue.
+	 */
 	private _flush(): void {
 		if (!this._handlers) {
 			return;
@@ -1140,10 +1166,20 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		var l = h.length;
 		this._handlers = undefined;
 		while (i < l) {
+			// Note: we enqueue every single callback/follower separately,
+			// because e.g. .done() might throw and we need to ensure we can
+			// continue after that. async handles that for us.
+			// And because the queue needs to be processed in-order, we can't
+			// 'filter' the non-callback operations out either.
 			async.enqueue(Promise._unwrapper, h[i++]);
 		}
 	}
 
+	/**
+	 * 'Unwrap' a promise handler, i.e. call a .then()/.done() callback, or
+	 * resolve a promise that's following us.
+	 * @param handler The handler being processed
+	 */
 	private _unwrap(handler: Handler<T, any>): void {
 		var callback: (x: any) => any = this._state === State.Fulfilled ? handler.onFulfilled : handler.onRejected;
 		if (handler.done) {
@@ -1181,10 +1217,26 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			}
 			return;
 		}
-		// Unwrap .then() calbacks
+		// Unwrap .then() callbacks, or resolve 'parent' promise
+		//
+		// Three scenarios are handled here:
+		// 1. An onFulfilled callback was registered and promise is fulfilled,
+		//    or onRejected callback was registered and promise is rejected
+		//    -> callback is a function, slave is the promise that was returned
+		//       from the .then() call, so resolve slave with outcome of callback
+		// 2. An onFulfilled callback was registered but promise is rejected,
+		//    or onRejected callback was registered but promise is fulfilled
+		//    -> callback is not a function (typically `undefined`), slave is
+		//       promise that was returned from the .then() call, so resolve it
+		//       with our own result (thereby 'skipping' the .then())
+		// 3. Another promise attached itself on our 'callback queue' to be
+		//    resolved when we do (i.e. its fate is determined by us)
+		//    -> callbacks will both be undefined, slave is that other promise
+		//       that wants to be resolved with our result
 		let slave = handler.slave;
 		trace && trace(this, `_unwrap(${slave._id})`);
 		if (typeof callback === "function") {
+			// Case 1
 			assert(!unwrappingPromise);
 			unwrappingPromise = slave;
 			try {
@@ -1195,6 +1247,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			}
 			unwrappingPromise = undefined;
 		} else {
+			// Case 2 and 3
 			if (this._state === State.Fulfilled) {
 				slave._fulfill(this._result);
 			} else {
@@ -1203,6 +1256,13 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		}
 	}
 
+	/**
+	 * Helper for unwrapping promise handler.
+	 * It's not a closure so it's cheap to schedule, and because it directly
+	 * calls the _unwrap() method on a promise, it's (way) faster than having to
+	 * use e.g. .call().
+	 * @param handler The handler being processed
+	 */
 	private static _unwrapper(handler: Handler<any, any>): void {
 		handler.promise._unwrap(handler);
 	}
