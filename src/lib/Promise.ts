@@ -297,8 +297,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			// 2.3.3.3.4.1: If `resolvePromise` or `rejectPromise` have been called, ignore it.
 			if (!called) {
 				// 2.3.3.3.4.2: Otherwise, reject `promise` with `e` as the reason.
-				this._reject(wrapNonError(e));
 				called = true;
+				this._reject(wrapNonError(e));
 			}
 		}
 	}
@@ -1100,8 +1100,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			// 2.3.3.3.4.1: If `resolvePromise` or `rejectPromise` have been called, ignore it.
 			if (!called) {
 				// 2.3.3.3.4.2: Otherwise, reject `promise` with `e` as the reason.
-				this._reject(wrapNonError(e));
 				called = true;
+				this._reject(wrapNonError(e));
 			}
 		}
 	}
