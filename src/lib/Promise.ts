@@ -1140,26 +1140,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		var l = h.length;
 		this._handlers = undefined;
 		while (i < l) {
-			var handler = h[i];
-			i++;
-
-			if (handler.done) {
-				// .done(...) callbacks
-				async.enqueue(Promise._unwrapper, handler);
-			} else {
-				if (!handler.onFulfilled && !handler.onRejected) {
-					// we're the return value of an onFulfilled, tell our
-					// 'parent' to resolve
-					if (this._state === State.Fulfilled) {
-						handler.slave._fulfill(this._result);
-					} else {
-						handler.slave._reject(this._result);
-					}
-				} else {
-					// .then(...) callbacks, including the returned promise from .then()
-					async.enqueue(Promise._unwrapper, handler);
-				}
-			}
+			async.enqueue(Promise._unwrapper, h[i++]);
 		}
 	}
 
