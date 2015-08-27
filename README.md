@@ -268,11 +268,6 @@ npm install
 npm run prepublish
 ```
 
-There currently seems to be an issue with building on Windows, where my
-workaround for dts-generator doesn't work. Workaround for the workaround:
-(manually) replace the escape-characters ("\n" etc) in dist/ts-promise.d.ts.
-A proper fix is in the works.
-
 # Changelog
 
 0.2.3 (2015-08-27):
