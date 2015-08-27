@@ -275,6 +275,10 @@ A proper fix is in the works.
 
 # Changelog
 
+0.2.3 (2015-08-27):
+- Fix stack overflow for very long unresolved promise chains
+- Simplify and document internal unwrapping logic
+
 0.2.2 (2015-08-04):
 - Implement `.finally()` (#3)
 - Add `Inspection<T>` interface (#4)
