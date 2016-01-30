@@ -270,6 +270,9 @@ npm run prepublish
 
 # Changelog
 
+0.2.4 (2016-01-30):
+- Stub `setImmediate` in case of browserify'ed environment (#8)
+
 0.2.3 (2015-08-27):
 - Fix stack overflow for very long unresolved promise chains
 - Simplify and document internal unwrapping logic
