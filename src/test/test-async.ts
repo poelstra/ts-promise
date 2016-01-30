@@ -131,4 +131,20 @@ describe("async", () => {
 			async.flush();
 		}).to.throw("cannot recursively flush");
 	});
+
+	it("allows overriding default scheduler by timer-stubbing libs (Sinon)", () => {
+		var tasks: Function[] = [];
+		var oldSetImmediate = global.setImmediate;
+		global.setImmediate = function(cb: (...args: any[]) => void, ...args: any[]): any {
+			tasks.push(cb);
+		};
+		var called = false;
+		function test() { called = true; }
+		async.enqueue(test, undefined);
+		expect(called).to.equal(false);
+		expect(tasks.length).to.equal(1);
+		tasks[0]();
+		expect(called).to.equal(true);
+		global.setImmediate = oldSetImmediate;
+	});
 });

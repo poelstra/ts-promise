@@ -14,6 +14,17 @@
 
 import { assert } from "./util";
 
+// ts-promise uses setImmediate by default, due to problems with
+// process.nextTick behaving unreliably in older versions of Node.
+// setImmediate is supposed to be available in the global scope, but browserify
+// doesn't recognize it. It's also available in the "timers" module, but
+// node.d.ts doesn't know that, and it may not be the version that timer-faking
+// libs would replace. So, make it available if it isn't, only in these
+// browserify'ed environments.
+if (typeof setImmediate === "undefined") {
+	window.setImmediate = setTimeout;
+}
+
 class CallQueue {
 	[index: number]: any;
 
