@@ -8,8 +8,8 @@
         "removeComments": false,
         "sourceMap": true,
         "outDir": "../../dist/",
-        "noLib": false,
-        "rootDir": "."
+        "rootDir": "..",
+        "noLib": false
     },
     "filesGlob": [
         "./**/*.ts",
