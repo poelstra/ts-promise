@@ -1,6 +1,6 @@
 {
   "name": "ts-promise",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Fast, robust, type-safe promises",
   "author": "Martin Poelstra <martin@beryllium.net>",
   "main": "./dist/lib/index.js",
