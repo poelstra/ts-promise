@@ -16,12 +16,15 @@
         "!./node_modules/**/*.ts"
     ],
     "files": [
+        "./async.ts",
         "./BaseError.ts",
+        "./index.ts",
         "./Promise.ts",
         "./Stack.ts",
         "./Trace.ts",
-        "./async.ts",
-        "./index.ts",
         "./util.ts"
-    ]
+    ],
+    "atom": {
+        "rewriteTsconfig": true
+    }
 }
