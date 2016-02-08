@@ -271,6 +271,9 @@ npm run prepublish
 
 # Changelog
 
+0.2.5 (2016-02-08):
+- Replace previous `setImmediate` hack with non-global-polluting one (#8)
+
 0.2.4 (2016-01-30):
 - Stub `setImmediate` in case of browserify'ed environment (#8)
 
