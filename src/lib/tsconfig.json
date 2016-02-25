@@ -1,5 +1,5 @@
 {
-    "version": "1.4.1",
+    "version": "1.8.2",
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
@@ -7,22 +7,26 @@
         "noImplicitAny": true,
         "removeComments": false,
         "sourceMap": true,
+        "noLib": false,
+        "preserveConstEnums": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "moduleResolution": "node",
         "outDir": "../../dist/",
-        "rootDir": "..",
-        "noLib": false
+        "rootDir": ".."
     },
     "filesGlob": [
-        "./**/*.ts",
-        "!./node_modules/**/*.ts"
+        "../../typings/tsd.d.ts",
+        "**/*.ts"
     ],
     "files": [
-        "./async.ts",
-        "./BaseError.ts",
-        "./index.ts",
-        "./Promise.ts",
-        "./Stack.ts",
-        "./Trace.ts",
-        "./util.ts"
+        "../../typings/tsd.d.ts",
+        "async.ts",
+        "BaseError.ts",
+        "index.ts",
+        "Promise.ts",
+        "Stack.ts",
+        "Trace.ts",
+        "util.ts"
     ],
     "atom": {
         "rewriteTsconfig": true

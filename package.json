@@ -23,7 +23,7 @@
     "mocha": "mocha -R spec dist/test/test-*.js",
     "cover": "istanbul cover _mocha -- -R spec dist/test/test-*.js",
     "lint": "node support/tslint_wrapper.js src/**.ts",
-    "build:src": "cd src/lib && tsc && dts-generator --name ts-promise --baseDir . --out ../../dist/ts-promise.d.ts index.ts --main ts-promise/index --es6 --es6default",
+    "build:src": "cd src/lib && tsc",
     "watch:src": "cd src/lib && tsc --watch",
     "build:test": "cd src/test && tsc",
     "watch:test": "cd src/test && tsc --watch",
@@ -31,13 +31,10 @@
     "clean": "rimraf -rf dist",
     "prepublish": "npm run lint && npm run build && npm run test"
   },
-  "typescript": {
-    "definition": "./dist/ts-promise.d.ts"
-  },
+  "typings": "./dist/lib/index.d.ts",
   "devDependencies": {
     "chai": "^2.2.0",
     "coveralls": "^2.11.2",
-    "dts-generator": "poelstra/dts-generator#6c96dfba98a467d76071fa67666474f760dab64f",
     "istanbul": "^0.3.13",
     "mocha": "^2.2.4",
     "multi-glob": "^0.4.0",
@@ -45,6 +42,6 @@
     "rimraf": "^2.3.2",
     "source-map-support": "^0.2.10",
     "tslint": "^2.1.1",
-    "typescript": "~1.7.5"
+    "typescript": "1.8.2"
   }
 }
