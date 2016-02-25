@@ -22,7 +22,7 @@
     "test": "npm run lint && npm run mocha",
     "mocha": "mocha -R spec dist/test/test-*.js",
     "cover": "istanbul cover _mocha -- -R spec dist/test/test-*.js",
-    "lint": "node support/tslint_wrapper.js src/**.ts",
+    "lint": "tslint -t verbose src/**/*.ts",
     "build:src": "cd src/lib && tsc",
     "watch:src": "cd src/lib && tsc --watch",
     "build:test": "cd src/test && tsc",
@@ -37,11 +37,10 @@
     "coveralls": "^2.11.2",
     "istanbul": "^0.3.13",
     "mocha": "^2.2.4",
-    "multi-glob": "^0.4.0",
     "promises-aplus-tests": "*",
     "rimraf": "^2.3.2",
     "source-map-support": "^0.2.10",
-    "tslint": "^2.1.1",
+    "tslint": "^3.5.0",
     "typescript": "1.8.2"
   }
 }
