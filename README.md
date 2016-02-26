@@ -18,7 +18,7 @@ Features:
 - [Fast](https://github.com/poelstra/ts-promise-benchmark)
 - Efficiently supports infinite recursion (with and without long stack traces)
 - Early throwing of unhandled rejections with `.done()`
-- No progression handlers, nor cancellation
+- No progression handlers
 - Optional explicit promise chain flushing, useful for test frameworks
 - Readable code (not too many tricks)
 
@@ -32,10 +32,9 @@ cd your-project
 npm install --save ts-promise
 ```
 
-If you're using Atom Typescript, this is all you need to get the typings working
-in your project too.
-Otherwise, add a `<reference path="./node_modules/ts-promise/dist/ts-promise.d.ts" />`
-line to your project. Rumor has it that this is no longer necessary when TS 1.6 arrives.
+If you use TypeScript, use `"moduleResolution": "node"` in your `tsconfig.json`
+to let it automatically pick up the typings of this package.
+
 
 ```ts
 // Example using ES6 syntax (e.g. using Typescript or Babel)
@@ -229,11 +228,14 @@ Methods on Promise instances:
 # TODO
 
 Planned features (in fairly arbitrary order):
+- Auto-generate online docs using TypeDoc
+- Replace/update the (slightly out-of-date) docs above
+- Implement property-based catch() predicate (error constructor(s) and function
+  already done)
 - Possibly-unhandled-rejection detection
-- Non-V8-support (should mainly be longStackTraces stuff, but also use of e.g.
-  MutationObserver)
+- Non-V8-support: it works in non-V8, but long stack traces aren't available
+- Switch (back) to process.nextTick() / MutationObserver etc
 - Implement `.promisify()`
-- Auto-generate online docs using TypeDoc (needs TS 1.5 support in it)
 - Simplify code somewhat more (most notably reduce duplication of 'called'-logic
   when resolving, maybe also slightly simplify async callback queue
   implementation)
@@ -270,6 +272,15 @@ npm run prepublish
 ```
 
 # Changelog
+
+0.3.0 (2016-02-26):
+- Switch to `"moduleResolution": "node"`-compatible typings
+-- To use these typings, simply put that setting in your `tsconfig.json` and
+   remove the (manual) reference to the ts-promise.d.ts file from your project.
+- Update to latest Typescript (1.8.2)
+- Update to latest TSLint, fix linting errors
+- `async.setScheduler()` now uses `undefined` (instead of `null`) to reset,
+  but the old behaviour still works (though deprecated)
 
 0.2.5 (2016-02-08):
 - Replace previous `setImmediate` hack with non-global-polluting one (#8)
