@@ -1,9 +1,11 @@
 /coverage
+/doc
 /src/test
 /dist/test
 /typings
 /tsd.json
 /tslint.json
+/.coveralls.yml
 /.editorconfig
 /.gitattributes
 /.gitignore
