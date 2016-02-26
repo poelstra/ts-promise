@@ -11,13 +11,10 @@
 
 "use strict";
 
-require("source-map-support").install();
+import "source-map-support/register";
 
-import assert = require("assert");
-import chai = require("chai");
+import { expect } from "chai";
 import * as util from "../lib/util";
-
-import expect = chai.expect;
 
 describe("utils", () => {
 	describe("assert", () => {

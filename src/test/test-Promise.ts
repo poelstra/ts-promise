@@ -9,19 +9,19 @@
 /// <reference path="../../typings/mocha/mocha.d.ts" />
 /// <reference path="../../typings/chai/chai.d.ts" />
 
+/* tslint:disable:no-null-keyword */ // we're doing a lot of specific checks on behaviour on `null`
+
 "use strict";
 
-require("source-map-support").install({
-	handleUncaughtExceptions: false
+import * as sourceMapSupport from "source-map-support";
+sourceMapSupport.install({
+	handleUncaughtExceptions: false,
 });
 
-import assert = require("assert");
-import chai = require("chai");
+import { expect } from "chai";
 import Trace from "../lib/Trace";
 import BaseError from "../lib/BaseError";
-import { Promise, Thenable, UnhandledRejectionError, Deferred, Inspection } from "../lib/Promise";
-
-import expect = chai.expect;
+import { Promise, Thenable, UnhandledRejectionError, Deferred } from "../lib/Promise";
 
 let boomError = new Error("boom");
 
@@ -57,7 +57,7 @@ describe("Promise", (): void => {
 		});
 		*/
 		it("requires a resolver function", () => {
-			function test(arg?: any) {
+			function test(arg?: any): void {
 				expect(() => new Promise(arg)).to.throw(TypeError);
 				expect(() => new Promise(arg)).to.throw("is not a function");
 			}
@@ -157,8 +157,8 @@ describe("Promise", (): void => {
 			var callback: (n: number) => void;
 			// Create rather dirty Promise-mock
 			var thenable: Thenable<number> = {
-				then: (cb: Function): Thenable<any> => { callback = <any>cb; return null; }
-			}
+				then: (cb: Function): Thenable<any> => { callback = <any>cb; return null; },
+			};
 			Promise.all([thenable]).then((r) => results = r);
 			callback(42);
 			expect(results).to.be.undefined;
@@ -215,8 +215,8 @@ describe("Promise", (): void => {
 			var callback: (n: number) => void;
 			// Create rather dirty Promise-mock
 			var thenable: Thenable<number> = {
-				then: (cb: Function): Thenable<any> => { callback = <any>cb; return null; }
-			}
+				then: (cb: Function): Thenable<any> => { callback = <any>cb; return null; },
+			};
 			Promise.race([thenable]).then((n) => result = n);
 			callback(42);
 			expect(result).to.be.undefined;
@@ -267,7 +267,7 @@ describe("Promise", (): void => {
 		var d: Deferred<number>;
 		beforeEach(() => {
 			d = Promise.defer<number>();
-		})
+		});
 		it("is initially pending", () => {
 			expect(d.promise.isPending()).to.be.true;
 		});
@@ -299,10 +299,10 @@ describe("Promise", (): void => {
 			expect(d.promise.reason()).to.equal(e);
 		});
 		it("VoidDeferred can be resolved using Thenable", () => {
-			var d = Promise.defer();
-			d.resolve(Promise.resolve()); // Mostly for the TS typing
+			var d2 = Promise.defer();
+			d2.resolve(Promise.resolve()); // Mostly for the TS typing
 			Promise.flush();
-			expect(d.promise.isFulfilled()).to.equal(true);
+			expect(d2.promise.isFulfilled()).to.equal(true);
 		});
 	});
 
@@ -619,8 +619,8 @@ describe("Promise", (): void => {
 		});
 		it("is silent when its reject callback returns non-Error Thenable", (): void => {
 			var thenable: Thenable<void> = {
-				then: (cb: Function): Thenable<any> => { cb(); return null; }
-			}
+				then: (cb: Function): Thenable<any> => { cb(); return null; },
+			};
 			Promise.reject(new Error("boom")).done(null, (r) => thenable);
 			expect(() => Promise.flush()).to.not.throw();
 		});
@@ -688,7 +688,7 @@ describe("Promise", (): void => {
 			var caught: UnhandledRejectionError;
 			try {
 				Promise.flush();
-			} catch(e) {
+			} catch (e) {
 				caught = e;
 			}
 			expect(caught).to.be.instanceof(UnhandledRejectionError);
@@ -703,7 +703,7 @@ describe("Promise", (): void => {
 			var caught: UnhandledRejectionError;
 			try {
 				Promise.flush();
-			} catch(e) {
+			} catch (e) {
 				caught = e;
 			}
 			expect(caught).to.be.instanceof(UnhandledRejectionError);
@@ -717,7 +717,7 @@ describe("Promise", (): void => {
 			var caught: UnhandledRejectionError;
 			try {
 				Promise.flush();
-			} catch(e) {
+			} catch (e) {
 				caught = e;
 			}
 			expect(caught).to.be.instanceof(UnhandledRejectionError);
@@ -736,7 +736,7 @@ describe("Promise", (): void => {
 			var caught: UnhandledRejectionError;
 			try {
 				Promise.flush();
-			} catch(e) {
+			} catch (e) {
 				caught = e;
 			}
 			expect(caught).to.be.instanceof(UnhandledRejectionError);
@@ -977,7 +977,9 @@ describe("Promise", (): void => {
 			}).then((): void => { // this line should not be present
 			}).then((): void => { // this line should not be present
 			}).catch((e: any): void => {
+				/* tslint:disable:no-unused-variable */
 				var stack = e.stack; // retrieve stack prop for coverage
+				/* tslint:enable:no-unused-variable */
 				// TODO: Check stack trace
 			});
 			Promise.flush();
@@ -987,6 +989,7 @@ describe("Promise", (): void => {
 				.then((): void => { // 2
 					throw new Error("boom");
 				}).then((): void => {
+					// empty
 				});
 			Promise.resolve()
 				.then((): Promise<void> => { // 3?
@@ -1002,6 +1005,7 @@ describe("Promise", (): void => {
 				.then((): void => { // 2
 					p = Promise.resolve(); // 3
 				}).then((): void => {
+					// empty
 				});
 			Promise.flush();
 			// TODO: Check stack trace if p
@@ -1026,16 +1030,17 @@ describe("Promise", (): void => {
 				expect(r).to.be.instanceof(Error);
 			});
 			Promise.resolve(42).done();
-			Promise.resolve(42).done((v) => {});
+			Promise.resolve(42).done((v) => { /* empty */ });
 			Promise.resolve(Promise.resolve(42));
 			var d = Promise.defer<number>();
 			Promise.resolve(d.promise);
 			d.resolve(42);
-			Promise.resolve({ then: (callback: Function) => {
-				callback(42);
-			}});
+			Promise.resolve({
+				then: (callback: Function): void => {
+					callback(42);
+				},
+			});
 			Promise.flush();
-			//console.log(traces);
 		});
 	}); // tracer
 });
@@ -1056,9 +1061,11 @@ describe("UnhandledRejectionError", () => {
 			expect(ure.stack).to.contain((<any>e).stack);
 		});
 		it("does not crash if reason doesn't have a stack", () => {
+			/* tslint:disable:no-unused-variable */
 			let ure1 = new UnhandledRejectionError(undefined, new Trace());
 			let ure2 = new UnhandledRejectionError(null, new Trace());
 			let ure3 = new UnhandledRejectionError({}, new Trace());
+			/* tslint:enable:no-unused-variable */
 		});
 	});
 });

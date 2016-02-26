@@ -25,7 +25,7 @@ export default class Stack {
 		}
 	}
 
-	inspect(): string {
+	public inspect(): string {
 		var lines = this.stack.split("\n");
 		lines.shift(); // Strip the "[object Object]" line
 		return lines.join("\n");

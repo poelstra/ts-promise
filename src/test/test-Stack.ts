@@ -11,17 +11,14 @@
 
 "use strict";
 
-require("source-map-support").install();
+import "source-map-support/register";
 
-import assert = require("assert");
-import chai = require("chai");
+import { expect } from "chai";
 import Stack from "../lib/Stack";
-
-import expect = chai.expect;
 
 describe("Stack", () => {
 	it("lists caller first when created without arguments", () => {
-		function test() {
+		function test(): Stack {
 			return new Stack();
 		}
 		var s = test();
@@ -30,13 +27,13 @@ describe("Stack", () => {
 	});
 
 	it("allows skipping calling functions", () => {
-		function test1() {
+		function test1(): Stack {
 			return test2();
 		}
-		function test2() {
+		function test2(): Stack {
 			return test3();
 		}
-		function test3() {
+		function test3(): Stack {
 			return new Stack(test2);
 		}
 		var s = test1();

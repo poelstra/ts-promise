@@ -10,17 +10,16 @@
     "class-name": true,
     "comment-format": [
       true,
-      "check-space",
-      "check-lowercase"
+      "check-space"
     ],
     "curly": true,
     "eofline": true,
     "forin": true,
     "indent": [
       true,
-      "spaces"
+      "tabs"
     ],
-    "interface-name": true,
+    "interface-name": false,
     "jsdoc-format": true,
     "label-position": true,
     "label-undefined": true,
@@ -32,7 +31,6 @@
     "member-ordering": [
       true,
       "public-before-private",
-      "static-before-instance",
       "variables-before-functions"
     ],
     "no-any": false,
@@ -67,7 +65,7 @@
     "no-unused-expression": true,
     "no-unused-variable": true,
     "no-use-before-declare": true,
-    "no-var-keyword": true,
+    "no-var-keyword": false,
     "no-var-requires": true,
     "object-literal-sort-keys": true,
     "one-line": [
@@ -101,9 +99,7 @@
       true,
       "call-signature",
       "parameter",
-      "arrow-parameter",
       "property-declaration",
-      "variable-declaration",
       "member-variable-declaration"
     ],
     "typedef-whitespace": [
@@ -125,8 +121,7 @@
     ],
     "use-strict": [
       true,
-      "check-module",
-      "check-function"
+      "check-module"
     ],
     "variable-name": [
       true,

@@ -7,6 +7,8 @@
 
 "use strict"; /* istanbul ignore next */ // ignores Typescript's __extend() function
 
+/* tslint:disable:no-unused-expression */ // prevent errors on `trace && trace(....)`
+
 // TODO:
 // - remove all "called = true"-type code in resolvers, replace by single check in _resolve()/_reject()
 // - add possibility for an unhandled-rejections-handler
@@ -27,29 +29,29 @@ export interface Thenable<T> {
  */
 export interface Inspection<T> {
 	/**
-	* @return `true` when promise is fulfilled, `false` otherwise.
-	*/
+	 * @return `true` when promise is fulfilled, `false` otherwise.
+	 */
 	isFulfilled(): boolean;
 
 	/**
-	* @return `true` when promise is rejected, `false` otherwise.
-	*/
+	 * @return `true` when promise is rejected, `false` otherwise.
+	 */
 	isRejected(): boolean;
 
 	/**
-	* @return `true` when promise is pending (may be resolved to another pending
-	*         promise), `false` otherwise.
-	*/
+	 * @return `true` when promise is pending (may be resolved to another pending
+	 *         promise), `false` otherwise.
+	 */
 	isPending(): boolean;
 
 	/**
-	* @return Fulfillment value if fulfilled, otherwise throws an error.
-	*/
+	 * @return Fulfillment value if fulfilled, otherwise throws an error.
+	 */
 	value(): T;
 
 	/**
-	* @return Rejection reason if rejected, otherwise throws an error.
-	*/
+	 * @return Rejection reason if rejected, otherwise throws an error.
+	 */
 	reason(): any;
 }
 
@@ -78,7 +80,7 @@ export class UnhandledRejectionError extends BaseError {
 		// thrown, than where it was thrown inside the promise lib.
 		// In case we don't have a stack, explicitly state so, to not let people
 		// chase a problem in the promise lib that isn't there...
-		let stack = this.reason && typeof this.reason === "object" && this.reason.stack;
+		let stack: string = this.reason && typeof this.reason === "object" && this.reason.stack;
 		if (typeof stack !== "string") {
 			stack = String(reason);
 		}
@@ -86,9 +88,9 @@ export class UnhandledRejectionError extends BaseError {
 	}
 }
 
-var trace: (promise: Promise<any>, msg: string) => void = null;
+var trace: (promise: Promise<any>, msg: string) => void = undefined;
 
-var longTraces = false;
+var longTraces: boolean = false;
 
 const enum State {
 	Pending,
@@ -106,7 +108,7 @@ interface GetThenError {
 }
 
 var getThenError: GetThenError = {
-	error: undefined
+	error: undefined,
 };
 
 function wrapNonError(a: any): Error {
@@ -181,6 +183,14 @@ export interface Deferred<T> {
 	promise: Promise<T>;
 
 	/**
+	 * Reject corresponding promise.
+	 * The first call to either resolve or reject resolves the promise, any
+	 * other calls are ignored.
+	 * This function is a free function (i.e. not a 'method' on this object).
+	 */
+	reject: (reason: Error) => void;
+
+	/**
 	 * Resolve corresponding promise.
 	 * The first call to either resolve or reject resolves the promise, any
 	 * other calls are ignored.
@@ -188,14 +198,6 @@ export interface Deferred<T> {
 	 * Note: resolving with a rejected Thenable leads to a rejected promise.
 	 */
 	resolve: (value: T|Thenable<T>) => void;
-
-	/**
-	 * Reject corresponding promise.
-	 * The first call to either resolve or reject resolves the promise, any
-	 * other calls are ignored.
-	 * This function is a free function (i.e. not a 'method' on this object).
-	 */
-	reject: (reason: Error) => void;
 }
 
 /**
@@ -245,10 +247,10 @@ export interface ErrorClass {
  * Fast, robust, type-safe promise implementation.
  */
 export class Promise<T> implements Thenable<T>, Inspection<T> {
-	private _id = promiseIdCounter++;
+	private _id: number = promiseIdCounter++;
 	private _state: State = State.Pending;
 	private _result: any = undefined; // Can be fulfillment value or rejection reason
-	private _handlers: Handler<T,any>[] = undefined;
+	private _handlers: Handler<T, any>[] = undefined;
 	private _trace: Trace = undefined;
 
 	/**
@@ -312,7 +314,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 					this._reject(wrapNonError(r));
 				}
 			);
-		} catch(e) {
+		} catch (e) {
 			// 2.3.3.3.4: If calling `then` throws an exception `e`,
 			// 2.3.3.3.4.1: If `resolvePromise` or `rejectPromise` have been called, ignore it.
 			if (!called) {
@@ -613,6 +615,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			case State.Pending: state = "pending"; break;
 			case State.Fulfilled: state = "fulfilled"; break;
 			case State.Rejected: state = "rejected"; break;
+			default: state = "unknown";
 		}
 		return `[Promise ${this._id}: ${state}]`;
 	}
@@ -853,8 +856,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		});
 		return {
 			promise: p,
+			reject: reject,
 			resolve: resolve,
-			reject: reject
 		};
 	}
 
@@ -939,7 +942,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		if (typeof tracer === "function") {
 			trace = tracer;
 		} else {
-			trace = null;
+			trace = undefined;
 		}
 	}
 
@@ -1011,7 +1014,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			// 2.3.3.3: If `then` is a function, call it with `x` as `this`,
 			//          first argument `resolvePromise`, and second argument `rejectPromise`
 			if (typeof then === "function") {
-				this._followThenable(<Thenable<T>>x, <ThenMethod<any,T>>then);
+				this._followThenable(<Thenable<T>>x, <ThenMethod<any, T>>then);
 				return;
 			}
 			// 2.3.3.4: If `then` is not a function, fulfill promise with `x`
@@ -1025,7 +1028,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			// 2.3.3.1: Let `then` be `x.then`
 			var then = (<any>x).then;
 			return then;
-		} catch(e) {
+		} catch (e) {
 			// 2.3.3.2: If retrieving the property `x.then` results in a thrown
 			// exception `e`, reject `promise` with `e` as the reason.
 			getThenError.error = e;
@@ -1062,7 +1065,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			if (originalStack) {
 				Object.defineProperty(this._result, "stack", {
 					enumerable: false,
-					get: (): string => originalStack + "\n  from Promise at:\n" + this._trace.inspect()
+					get: (): string => originalStack + "\n  from Promise at:\n" + this._trace.inspect(),
 				});
 			}
 		}
@@ -1115,7 +1118,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 					this._reject(wrapNonError(r));
 				}
 			);
-		} catch(e) {
+		} catch (e) {
 			// 2.3.3.3.4: If calling `then` throws an exception `e`,
 			// 2.3.3.3.4.1: If `resolvePromise` or `rejectPromise` have been called, ignore it.
 			if (!called) {
@@ -1137,7 +1140,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			onFulfilled,
 			onRejected,
 			slave,
-			done
+			done,
 		};
 		if (this._state !== State.Pending) {
 			async.enqueue(Promise._unwrapper, h);
@@ -1206,7 +1209,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 					p.done(); // Ensure it throws as soon as it's rejected
 				}
 				unwrappingPromise = undefined;
-			} catch(e) {
+			} catch (e) {
 				unwrappingPromise = undefined;
 
 				// Wrap in UnhandledRejectionError
@@ -1242,7 +1245,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			try {
 				// 2.2.5 handlers must be called as functions
 				slave._resolve(callback(this._result));
-			} catch(e) {
+			} catch (e) {
 				slave._reject(wrapNonError(e));
 			}
 			unwrappingPromise = undefined;

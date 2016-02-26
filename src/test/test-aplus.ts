@@ -10,16 +10,18 @@
 
 "use strict";
 
-require("source-map-support").install();
+import "source-map-support/register";
 
 import { Promise, Deferred } from "../lib/Promise";
 
 var adapter = {
-	resolved: (value: any): Promise<any> => Promise.resolve(value),
+	deferred: (): Deferred<any> => Promise.defer(),
 	rejected: (reason: Error): Promise<any> => Promise.reject(reason),
-	deferred: (): Deferred<any> => Promise.defer()
+	resolved: (value: any): Promise<any> => Promise.resolve(value),
 };
 
 describe("Promises/A+ Tests", (): void => {
+	/* tslint:disable:no-require-imports */
 	require("promises-aplus-tests").mocha(adapter);
+	/* tslint:enable:no-require-imports */
 });

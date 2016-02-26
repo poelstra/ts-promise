@@ -11,13 +11,10 @@
 
 "use strict";
 
-require("source-map-support").install();
+import "source-map-support/register";
 
-import assert = require("assert");
-import chai = require("chai");
+import { expect } from "chai";
 import BaseError from "../lib/BaseError";
-
-import expect = chai.expect;
 
 describe("BaseError", () => {
 	var e: BaseError;

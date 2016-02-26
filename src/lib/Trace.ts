@@ -19,14 +19,14 @@ import Stack from "./Stack";
  * with Promises or Events).
  */
 export default class Trace {
-	stack: Stack;
-	sources: Stack[];
+	public stack: Stack;
+	public sources: Stack[];
 
 	constructor(ignoreUntil: Function = Trace) {
 		this.stack = new Stack(ignoreUntil);
 	}
 
-	static traceLimit: number = 10;
+	public static traceLimit: number = 10;
 
 	/**
 	 * Assign another Trace as the source of this Trace.
@@ -37,7 +37,7 @@ export default class Trace {
 	 *
 	 * @param source Trace to use as source.
 	 */
-	setSource(source: Trace): void {
+	public setSource(source: Trace): void {
 		if (!source.sources) {
 			this.sources = [source.stack];
 		} else {
@@ -48,7 +48,7 @@ export default class Trace {
 		}
 	}
 
-	inspect(): string {
+	public inspect(): string {
 		var result = this.stack.inspect();
 		if (this.sources) {
 			for (var i = this.sources.length - 1; i >= 0; i--) {

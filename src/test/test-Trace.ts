@@ -11,17 +11,14 @@
 
 "use strict";
 
-require("source-map-support").install();
+import "source-map-support/register";
 
-import assert = require("assert");
-import chai = require("chai");
+import { expect } from "chai";
 import Trace from "../lib/Trace";
-
-import expect = chai.expect;
 
 describe("Trace", () => {
 	it("lists caller first when created without arguments", () => {
-		function test() {
+		function test(): Trace {
 			return new Trace();
 		}
 		var t = test();
@@ -30,13 +27,13 @@ describe("Trace", () => {
 	});
 
 	it("allows skipping calling functions", () => {
-		function test1() {
+		function test1(): Trace {
 			return test2();
 		}
-		function test2() {
+		function test2(): Trace {
 			return test3();
 		}
-		function test3() {
+		function test3(): Trace {
 			return new Trace(test2);
 		}
 		var t = test1();
@@ -45,10 +42,10 @@ describe("Trace", () => {
 	});
 
 	it("supports assigning a source trace", () => {
-		function test1() {
+		function test1(): Trace {
 			return new Trace();
 		}
-		function test2() {
+		function test2(): Trace {
 			return new Trace();
 		}
 
@@ -62,13 +59,13 @@ describe("Trace", () => {
 	});
 
 	it("overwrites previous source", () => {
-		function test1() {
+		function test1(): Trace {
 			return new Trace();
 		}
-		function test2() {
+		function test2(): Trace {
 			return new Trace();
 		}
-		function test3() {
+		function test3(): Trace {
 			return new Trace();
 		}
 
@@ -83,10 +80,10 @@ describe("Trace", () => {
 	});
 
 	it("limits trace depth", () => {
-		function test1() {
+		function test1(): Trace {
 			return new Trace();
 		}
-		function test2(t1: Trace) {
+		function test2(t1: Trace): Trace {
 			var t2 = new Trace();
 			t2.setSource(t1);
 			return t2;
@@ -99,10 +96,10 @@ describe("Trace", () => {
 	});
 
 	it("supports recursive traces", () => {
-		function test1() {
+		function test1(): Trace {
 			return new Trace();
 		}
-		function test2() {
+		function test2(): Trace {
 			return new Trace();
 		}
 
