@@ -275,8 +275,8 @@ npm run prepublish
 
 0.3.0 (2016-02-26):
 - Switch to `"moduleResolution": "node"`-compatible typings
--- To use these typings, simply put that setting in your `tsconfig.json` and
-   remove the (manual) reference to the ts-promise.d.ts file from your project.
+  - To use these typings, simply put that setting in your `tsconfig.json` and
+    remove the (manual) reference to the ts-promise.d.ts file from your project.
 - Update to latest Typescript (1.8.2)
 - Update to latest TSLint, fix linting errors
 - `async.setScheduler()` now uses `undefined` (instead of `null`) to reset,
