@@ -34,13 +34,13 @@
   "typings": "./dist/lib/index.d.ts",
   "devDependencies": {
     "chai": "^2.2.0",
-    "coveralls": "^2.11.2",
-    "istanbul": "^0.3.13",
-    "mocha": "^2.2.4",
-    "promises-aplus-tests": "*",
-    "rimraf": "^2.3.2",
-    "source-map-support": "^0.4.0",
-    "tslint": "^3.5.0",
-    "typescript": "1.8.2"
+    "coveralls": "^2.11.11",
+    "istanbul": "^0.3.22",
+    "mocha": "^2.5.3",
+    "promises-aplus-tests": "^2.1.2",
+    "rimraf": "^2.5.4",
+    "source-map-support": "^0.4.2",
+    "tslint": "^3.13.0",
+    "typescript": "^2.0.0"
   }
 }

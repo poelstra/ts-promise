@@ -22,11 +22,11 @@ export default class Trace {
 	public stack: Stack;
 	public sources: Stack[];
 
+	public static traceLimit: number = 10;
+
 	constructor(ignoreUntil: Function = Trace) {
 		this.stack = new Stack(ignoreUntil);
 	}
-
-	public static traceLimit: number = 10;
 
 	/**
 	 * Assign another Trace as the source of this Trace.

@@ -9,14 +9,18 @@
 
 var hasStacks = (typeof (<any>Error).captureStackTrace === "function");
 
-export default class BaseError implements Error {
-	public name: string;
-	public message: string;
+export default class BaseError extends Error {
 	public stack: string; // provided by V8
 
 	constructor(name: string, message: string) {
+		super(message);
 		this.name = name;
+
+		// Note: still need to 'manually' assign .message,
+		// because engines apparently don't allow subclassing properly.
+		// https://github.com/Microsoft/TypeScript/issues/1168#issuecomment-107729088
 		this.message = message;
+
 		/* istanbul ignore else */ // TODO: remove when testing for non-V8
 		if (hasStacks) {
 			(<any>Error).captureStackTrace(this, this.constructor);
@@ -25,8 +29,3 @@ export default class BaseError implements Error {
 		}
 	}
 }
-
-// Make BaseError 'extend' Error, not just 'implement' Error
-// Because Error is defined in Typescript's lib.d.ts as an interface instead of
-// a class, we can't 'normally' extend it.
-BaseError.prototype = Object.create(Error.prototype);
