@@ -21,7 +21,7 @@
   "scripts": {
     "test": "npm run lint && npm run mocha",
     "mocha": "mocha -R spec dist/test/test-*.js",
-    "cover": "istanbul cover _mocha -- -R spec dist/test/test-*.js",
+    "cover": "istanbul cover --report json _mocha -- -R spec dist/test/test-*.js && remap-istanbul -i coverage/coverage-final.json -t html -o coverage/html-report",
     "lint": "tslint -t verbose src/**/*.ts",
     "build:src": "cd src/lib && tsc",
     "watch:src": "cd src/lib && tsc --watch",
@@ -38,6 +38,7 @@
     "istanbul": "^0.3.22",
     "mocha": "^2.5.3",
     "promises-aplus-tests": "^2.1.2",
+    "remap-istanbul": "^0.6.4",
     "rimraf": "^2.5.4",
     "source-map-support": "^0.4.2",
     "tslint": "^3.13.0",

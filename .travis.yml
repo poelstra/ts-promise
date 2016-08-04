@@ -4,4 +4,4 @@ node_js:
 script:
   - "npm run cover"
 after_script:
-  - "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
+  - "./node_modules/.bin/remap-istanbul -i coverage/coverage-final.json -t lcovonly | ./node_modules/.bin/coveralls"
