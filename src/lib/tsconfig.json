@@ -23,6 +23,7 @@
         "async.ts",
         "BaseError.ts",
         "index.ts",
+        "polyfill.ts",
         "Promise.ts",
         "Stack.ts",
         "Trace.ts",
