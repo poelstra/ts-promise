@@ -169,4 +169,23 @@ describe("async", () => {
 		expect(called).to.equal(true);
 		global.setImmediate = oldSetImmediate;
 	});
+
+	it("falls back to setTimeout when setImmediate is not available", () => {
+		const tasks: Function[] = [];
+		const oldSetImmediate = global.setImmediate;
+		const oldSetTimeout = global.setTimeout;
+		delete global["setImmediate"]; // tslint:disable-line:no-string-literal
+		global.setTimeout = function(cb: (...args: any[]) => void, ms: number, ...args: any[]): any {
+			tasks.push(cb);
+		};
+		let called = false;
+		function test(): void { called = true; }
+		async.enqueue(test, undefined);
+		expect(called).to.equal(false);
+		expect(tasks.length).to.equal(1);
+		tasks[0]();
+		expect(called).to.equal(true);
+		global.setImmediate = oldSetImmediate;
+		global.setTimeout = oldSetTimeout;
+	});
 });

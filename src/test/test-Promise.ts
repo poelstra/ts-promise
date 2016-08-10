@@ -225,6 +225,33 @@ describe("Promise", (): void => {
 		});
 	}); // .race()
 
+	describe(".reject()", () => {
+		it("should handle undefined stack without tracing", () => {
+			// This can happen e.g. on "RangeError: Maximum call stack size exceeded",
+			// (at least on node v0.10.26 it did)
+			const e = new Error("boom");
+			(<any>e).stack = undefined;
+			const p = Promise.reject(e);
+			Promise.flush();
+			expect(p.reason()).to.be.instanceof(Error);
+			expect(p.reason().stack).to.equal(undefined);
+		});
+		it("should handle undefined stack with tracing", () => {
+			// This can happen e.g. on "RangeError: Maximum call stack size exceeded",
+			// (at least on node v0.10.26 it did)
+			const e = new Error("boom");
+			(<any>e).stack = undefined;
+
+			Promise.setLongTraces(true);
+			const p = Promise.reject(e);
+			Promise.setLongTraces(false);
+
+			Promise.flush();
+			expect(p.reason()).to.be.instanceof(Error);
+			expect(p.reason().stack).to.equal(undefined);
+		});
+	});
+
 	describe(".delay()", () => {
 		it("resolves to void after given timeout, given no value", (done: MochaDone) => {
 			var p = Promise.delay(10);

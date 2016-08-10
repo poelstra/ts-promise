@@ -98,10 +98,11 @@ const enum State {
 	Rejected
 }
 
-/* istanbul ignore next */
 function internalResolver(fulfill: (value: any) => void, reject: (reason: Error) => void): void {
 	/* no-op, sentinel value */
 }
+
+internalResolver(undefined, undefined); // just for code coverage...
 
 interface GetThenError {
 	error: any;
@@ -615,6 +616,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			case State.Pending: state = "pending"; break;
 			case State.Fulfilled: state = "fulfilled"; break;
 			case State.Rejected: state = "rejected"; break;
+			/* istanbul ignore next */
 			default: state = "unknown";
 		}
 		return `[Promise ${this._id}: ${state}]`;
