@@ -16,6 +16,7 @@ Features:
 - ES6 Promise interface compatible
 - Long stack traces support (switchable at runtime!)
 - [Fast](https://github.com/poelstra/ts-promise-benchmark)
+- Small (gzipped minified version 0.3.1 weighs only 3.5kB, everything included)
 - Efficiently supports infinite recursion (with and without long stack traces)
 - Early throwing of unhandled rejections with `.done()`
 - No progression handlers
