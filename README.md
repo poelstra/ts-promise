@@ -274,6 +274,11 @@ npm run prepublish
 
 # Changelog
 
+0.3.1 (2016-08-17):
+- Add opt-in `polyfill()`
+- Add experimental minified build (`dist/browser.min.js`)
+- Upgrade dev dependencies
+
 0.3.0 (2016-02-26):
 - Switch to `"moduleResolution": "node"`-compatible typings
   - To use these typings, simply put that setting in your `tsconfig.json` and
