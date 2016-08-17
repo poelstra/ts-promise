@@ -45,6 +45,7 @@
     "rimraf": "^2.5.4",
     "source-map-support": "^0.4.2",
     "tslint": "^3.13.0",
-    "typescript": "^2.0.0"
+    "typescript": "^2.0.0",
+    "uglify-js": "^2.7.3"
   }
 }
