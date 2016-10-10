@@ -34,6 +34,7 @@
     "minify": "uglifyjs ./dist/browser.js --compress --mangle --mangle-props --mangle-regex='/^_/' --reserved 'Promise' > ./dist/browser.min.js"
   },
   "typings": "./dist/lib/index.d.ts",
+  "types": "./dist/lib/index.d.ts",
   "devDependencies": {
     "browserify": "^13.0.1",
     "chai": "^2.2.0",
