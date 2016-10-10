@@ -5,10 +5,6 @@
  * License: MIT
  */
 
-/// <reference path="../../typings/node/node.d.ts" />
-/// <reference path="../../typings/mocha/mocha.d.ts" />
-/// <reference path="../../typings/chai/chai.d.ts" />
-
 /* tslint:disable:no-null-keyword */ // we're doing a lot of specific checks on behaviour on `null`
 
 "use strict";

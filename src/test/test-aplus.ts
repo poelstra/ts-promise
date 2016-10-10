@@ -5,9 +5,6 @@
  * License: MIT
  */
 
-/// <reference path="../../typings/node/node.d.ts" />
-/// <reference path="../../typings/mocha/mocha.d.ts" />
-
 "use strict";
 
 import "source-map-support/register";

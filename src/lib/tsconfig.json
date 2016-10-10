@@ -1,5 +1,4 @@
 {
-    "version": "1.8.2",
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
@@ -14,21 +13,6 @@
         "outDir": "../../dist/",
         "rootDir": ".."
     },
-    "filesGlob": [
-        "../../typings/tsd.d.ts",
-        "**/*.ts"
-    ],
-    "files": [
-        "../../typings/tsd.d.ts",
-        "async.ts",
-        "BaseError.ts",
-        "index.ts",
-        "polyfill.ts",
-        "Promise.ts",
-        "Stack.ts",
-        "Trace.ts",
-        "util.ts"
-    ],
     "atom": {
         "rewriteTsconfig": true
     }
