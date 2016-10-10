@@ -274,6 +274,12 @@ npm run prepublish
 
 # Changelog
 
+Notable changes listed below, for details see the version tags in Git.
+
+0.3.2 (2016-10-10):
+- Fix TS2 not finding ts-promise typings
+- Switch to `@types` typings
+
 0.3.1 (2016-08-17):
 - Add opt-in `polyfill()`
 - Add experimental minified build (`dist/browser.min.js`)
