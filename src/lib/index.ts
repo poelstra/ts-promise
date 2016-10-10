@@ -5,8 +5,6 @@
  * License: MIT
  */
 
-"use strict";
-
 export { default, Promise, Thenable, UnhandledRejectionError, Deferred, VoidDeferred } from "./Promise";
 export { default as polyfill } from "./polyfill";
 

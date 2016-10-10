@@ -5,8 +5,6 @@
  * License: MIT
  */
 
-"use strict";
-
 // We don't want to depend on the full Node.JS typings, and only use this to
 // detect the presence of Node, so declare it here.
 declare var global: any;

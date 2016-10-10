@@ -5,8 +5,6 @@
  * License: MIT
  */
 
-"use strict";
-
 import "source-map-support/register";
 
 import { Promise, Deferred } from "../lib/Promise";

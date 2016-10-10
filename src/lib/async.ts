@@ -7,8 +7,6 @@
  * License: MIT
  */
 
-"use strict";
-
 // TODO:
 // - simpler code
 

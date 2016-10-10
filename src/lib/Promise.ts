@@ -5,8 +5,6 @@
  * License: MIT
  */
 
-"use strict"; /* istanbul ignore next */ // ignores Typescript's __extend() function
-
 /* tslint:disable:no-unused-expression */ // prevent errors on `trace && trace(....)`
 
 // TODO:

@@ -5,8 +5,6 @@
  * License: MIT
  */
 
-"use strict";
-
 // TODO:
 // - test/make it work in non-V8
 

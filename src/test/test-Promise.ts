@@ -7,8 +7,6 @@
 
 /* tslint:disable:no-null-keyword */ // we're doing a lot of specific checks on behaviour on `null`
 
-"use strict";
-
 import * as sourceMapSupport from "source-map-support";
 sourceMapSupport.install({
 	handleUncaughtExceptions: false,

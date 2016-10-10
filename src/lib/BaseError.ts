@@ -5,8 +5,6 @@
  * License: MIT
  */
 
-"use strict";
-
 var hasStacks = (typeof (<any>Error).captureStackTrace === "function");
 
 export default class BaseError extends Error {

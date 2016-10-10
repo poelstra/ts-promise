@@ -5,8 +5,6 @@
  * License: MIT
  */
 
-"use strict";
-
 import { Promise } from "./Promise";
 import { getGlobal } from "./util";
 
