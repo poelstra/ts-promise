@@ -1059,8 +1059,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		// 2.1.3.2 When rejected, a promise must have a reason, which must not change.
 		this._state = State.Rejected;
 		this._result = reason;
-		if (this._trace && this._result instanceof Error && !this._result.trace) {
-			this._result.trace = this._trace;
+		if (this._trace && this._result instanceof Error && !(<any>this._result).trace) {
+			(<any>this._result).trace = this._trace;
 			// TODO: Meh, this always accesses '.stack', which is supposed to be expensive
 			var originalStack = this._result.stack;
 			// Stack may be undefined if e.g. a Stack Overflow occurred
