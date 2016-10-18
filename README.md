@@ -276,6 +276,10 @@ npm run prepublish
 
 Notable changes listed below, for details see the version tags in Git.
 
+0.3.3 (2016-10-18):
+- Fix unnecessary dependency on node typings in generated type definitions,
+  broke some builds (#13)
+
 0.3.2 (2016-10-10):
 - Fix TS2 not finding ts-promise typings
 - Switch to `@types` typings
