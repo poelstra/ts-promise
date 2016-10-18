@@ -11,7 +11,8 @@
         "suppressImplicitAnyIndexErrors": true,
         "moduleResolution": "node",
         "outDir": "../../dist/",
-        "rootDir": ".."
+        "rootDir": "..",
+        "types": []
     },
     "atom": {
         "rewriteTsconfig": true

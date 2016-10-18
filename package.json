@@ -27,7 +27,7 @@
     "watch:src": "cd src/lib && tsc --watch",
     "build:test": "cd src/test && tsc",
     "watch:test": "cd src/test && tsc --watch",
-    "build": "npm run build:src && npm run build:test && npm run browserify && npm run minify",
+    "build": "npm run build:test && npm run build:src && npm run browserify && npm run minify",
     "clean": "rimraf -rf dist",
     "prepublish": "npm run lint && npm run build && npm run test",
     "browserify": "browserify --node --standalone ts-promise ./dist/lib/index.js > ./dist/browser.js",
