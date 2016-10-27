@@ -103,6 +103,10 @@ function internalResolver(fulfill: (value: any) => void, reject: (reason: Error)
 
 internalResolver(undefined, undefined); // just for code coverage...
 
+function noop(): void {
+	/* no-op */
+}
+
 interface GetThenError {
 	error: any;
 }
@@ -671,6 +675,13 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @return Promise resolved to value after this promise fulfills
 	 */
 	public return<R>(value?: R|Thenable<R>): Promise<R> {
+		if (value === undefined) {
+			// In TypeScript, we often need to 'force' a promise to become a
+			// void promise, so this is a common case. Prevents the closure.
+			// (Note: the any cast is just because TS assumes were going to
+			// return an R, but we're in fact going to return a void.)
+			return this.then<any>(noop);
+		}
 		return this.then(() => value);
 	}
 
