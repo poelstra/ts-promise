@@ -6,8 +6,10 @@
  */
 
 // We don't want to depend on the full Node.JS typings, and only use this to
-// detect the presence of Node, so declare it here.
+// detect the presence of Node, webworker or browser context, so declare it here.
 declare var global: any;
+declare var self: any;
+declare var window: any;
 
 /**
  * Throw an Error when given condition is false.

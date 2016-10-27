@@ -14,6 +14,9 @@
         "rootDir": "..",
         "types": [
             "node", "mocha"
+        ],
+        "lib": [
+            "es5", "es2015.promise"
         ]
     },
     "atom": {

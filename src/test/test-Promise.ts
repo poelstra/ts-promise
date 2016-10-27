@@ -16,6 +16,7 @@ import { expect } from "chai";
 import Trace from "../lib/Trace";
 import BaseError from "../lib/BaseError";
 import { Promise, Thenable, UnhandledRejectionError, Deferred } from "../lib/Promise";
+import EsPromise from "./espromise";
 
 let boomError = new Error("boom");
 
@@ -218,6 +219,47 @@ describe("Promise", (): void => {
 			expect(result).to.equal(42);
 		});
 	}); // .race()
+
+	describe(".resolve()", () => {
+		it("should create a void promise without requiring an argument", () => {
+			const p = Promise.resolve();
+			Promise.flush();
+			expect(p.value()).to.equal(undefined);
+		});
+		it("should easily accept Thenable<void>", () => {
+			const t: Thenable<void> = Promise.resolve();
+			const p: Promise<void> = Promise.resolve(t);
+			Promise.flush();
+			expect(p.value()).to.equal(undefined);
+		});
+		it("should easily accept Thenable<number>", () => {
+			const t: Thenable<number> = Promise.resolve(42);
+			const p: Promise<number> = Promise.resolve(t);
+			Promise.flush();
+			expect(p.value()).to.equal(42);
+		});
+		it("should easily accept standard ES2015 Promise<void>", (done) => {
+			// Apparently, ES2015 promises aren't detected as being compatible
+			// with our initial definition of a Thenable.
+			// It lead to errors like "Type 'Promise<Promise<void>>' is not assignable
+			// to type 'Promise<void>'. (...)"
+			const esPromise = EsPromise.resolve();
+			const p: Promise<void> = Promise.resolve(esPromise);
+			p.done((n) => {
+				expect(n).to.equal(undefined);
+				done();
+			});
+		});
+		it("should easily accept standard ES2015 Promise<number>", (done) => {
+			// See comment in previous test for why this test is here.
+			const esPromise = EsPromise.resolve(42);
+			const p: Promise<number> = Promise.resolve(esPromise);
+			p.done((n) => {
+				expect(n).to.equal(42);
+				done();
+			});
+		});
+	});
 
 	describe(".reject()", () => {
 		it("should handle undefined stack without tracing", () => {

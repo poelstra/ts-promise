@@ -18,7 +18,8 @@ import Trace from "./Trace";
 import BaseError from "./BaseError";
 
 export interface Thenable<T> {
-	then<R>(onFulfilled?: (value: T) => R|Thenable<R>, onRejected?: (reason: Error) => R|Thenable<R>): Thenable<R>;
+	then<R>(onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => R|Thenable<R>): Thenable<R>;
+	then<R>(onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => void): Thenable<R|void>;
 }
 
 /**
