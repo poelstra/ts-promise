@@ -276,6 +276,10 @@ npm run prepublish
 
 Notable changes listed below, for details see the version tags in Git.
 
+0.3.4 (2016-10-27):
+- Make Thenable interface more compatible with TS2's ES2015 promise, to let e.g. Promise.resolve() more easily accept it.
+- Optimize `Promise#return()` (without argument): very common case when converting a `Promise<X>` to a `Promise<void>`.
+
 0.3.3 (2016-10-18):
 - Fix unnecessary dependency on node typings in generated type definitions,
   broke some builds (#13)
