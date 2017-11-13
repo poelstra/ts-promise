@@ -38,7 +38,7 @@
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/mocha": "^2.2.32",
-    "@types/node": "^6.0.45",
+    "@types/node": "^6.0.90",
     "@types/source-map-support": "^0.2.28",
     "browserify": "^13.0.1",
     "chai": "^2.2.0",
@@ -50,7 +50,7 @@
     "rimraf": "^2.5.4",
     "source-map-support": "^0.4.2",
     "tslint": "^3.13.0",
-    "typescript": "^2.0.3",
+    "typescript": "^2.6.1",
     "uglify-js": "^2.7.3"
   }
 }
