@@ -1,22 +1,12 @@
 {
+    "extends": "../tsconfig.base.json",
     "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
-        "declaration": true,
-        "noImplicitAny": true,
-        "removeComments": false,
-        "sourceMap": true,
-        "noLib": false,
-        "preserveConstEnums": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "moduleResolution": "node",
-        "outDir": "../../dist/",
-        "rootDir": "..",
         "types": [
             "node", "mocha"
         ],
         "lib": [
-            "es5", "es2015.promise"
+            "es5",
+            "es2015.promise"
         ]
     }
 }
