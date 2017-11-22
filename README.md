@@ -276,8 +276,14 @@ npm run prepublish
 
 Notable changes listed below, for details see the version tags in Git.
 
+1.0.0 (2017-11-22):
+- It's production-ready for a long time, so let's call it that way.
+- Change type of argument to catch callbacks to `any` (instead of `Error`) because rejections (e.g. from other
+  libs) could actually be non-Errors. No functional changes (code handled that just fine already) (#15, thanks @sgrtho!)
+- Fix Error subclasses on recent TypeScript + Node, also enables stack traces on more platforms (#14, thanks @mgroenhoff!)
+
 0.3.4 (2016-10-27):
-- Make Thenable interface more compatible with TS2's ES2015 promise, to let e.g. Promise.resolve() more easily accept it.
+- Make Thenable interface more compatible with TS2's ES2015 promise, to let e.g. `Promise.resolve()` more easily accept it.
 - Optimize `Promise#return()` (without argument): very common case when converting a `Promise<X>` to a `Promise<void>`.
 
 0.3.3 (2016-10-18):
