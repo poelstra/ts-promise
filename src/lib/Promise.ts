@@ -97,7 +97,7 @@ const enum State {
 	Rejected
 }
 
-function internalResolver(fulfill: (value: any) => void, reject: (reason: Error) => void): void {
+function internalResolver(fulfill: (value: any) => void, reject: (reason: any) => void): void {
 	/* no-op, sentinel value */
 }
 
@@ -123,11 +123,11 @@ function wrapNonError(a: any): Error {
 }
 
 interface Resolver<T> {
-	(resolve: (value: T|Thenable<T>) => void, reject: (reason: Error) => void): void;
+	(resolve: (value: T|Thenable<T>) => void, reject: (reason: any) => void): void;
 }
 
 interface ThenMethod<X, T> {
-	(resolve: (value: X|Thenable<X>) => T|Thenable<T>, reject: (reason: Error) => T|Thenable<T>): void;
+	(resolve: (value: X|Thenable<X>) => T|Thenable<T>, reject: (reason: any) => T|Thenable<T>): void;
 }
 
 interface FulfillmentHandler<T, R> {
@@ -135,7 +135,7 @@ interface FulfillmentHandler<T, R> {
 }
 
 interface RejectionHandler<R> {
-	(reason: Error): R|Thenable<R>;
+	(reason: any): R|Thenable<R>;
 }
 
 /**
@@ -305,7 +305,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 					called = true;
 					this._resolve(y);
 				},
-				(r: Error): void => {
+				(r: any): void => {
 					if (called) {
 						// 2.3.3.3.3: If both `resolvePromise` and `rejectPromise` are called,
 						// or multiple calls to the same argument are made, the first call
@@ -357,7 +357,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 */
 	public then<R>(
 		onFulfilled: (value: T) => R|Thenable<R>,
-		onRejected?: (reason: Error) => R|Thenable<R>
+		onRejected?: (reason: any) => R|Thenable<R>
 	): Promise<R> {
 		trace && trace(this, `then(${typeof onFulfilled}, ${typeof onRejected})`);
 
@@ -400,7 +400,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 */
 	public done<R>(
 		onFulfilled?: (value: T) => void|Thenable<void>,
-		onRejected?: (reason: Error) => void|Thenable<void>
+		onRejected?: (reason: any) => void|Thenable<void>
 	): void {
 		trace && trace(this, `done(${typeof onFulfilled}, ${typeof onRejected})`);
 		if (this._state === State.Fulfilled && typeof onFulfilled !== "function") {
@@ -432,7 +432,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *                    or promise for a value.
 	 * @return Promise for original value, or 'replaced' value in case of error
 	 */
-	public catch<R>(onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	public catch<R>(onRejected: (reason: any) => R|Thenable<R>): Promise<T|R>;
 	/**
 	 * Catch only errors of the specified class in case promise is rejected.
 	 *
@@ -478,7 +478,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *                    or promise for a value.
 	 * @return Promise for original value, or 'replaced' value in case of error
 	 */
-	public catch<R>(predicate: (reason: Error) => boolean, onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	public catch<R>(predicate: (reason: any) => boolean, onRejected: (reason: any) => R|Thenable<R>): Promise<T|R>;
 	/**
 	 * Catch only errors that match predicate in case promise is rejected.
 	 * Predicate can be an Error (sub-)class, array of Error classes, or a
@@ -497,12 +497,12 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 */
 	public catch<R>(...args: any[]): Promise<T|R> {
 		if (arguments.length === 1) {
-			let onRejected: (reason: Error) => R|Thenable<R> = arguments[0];
+			let onRejected: (reason: any) => R|Thenable<R> = arguments[0];
 			return this.then(undefined, onRejected);
 		} else {
 			let predicate: any = arguments[0];
-			let onRejected: (reason: Error) => R|Thenable<R> = arguments[1];
-			return this.then(undefined, (reason: Error) => {
+			let onRejected: (reason: any) => R|Thenable<R> = arguments[1];
+			return this.then(undefined, (reason: any) => {
 				let match = false;
 				if (typeof predicate === "function") {
 					if (predicate.prototype instanceof Error || predicate === Error) {
@@ -793,7 +793,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 							resolve(result);
 						}
 					},
-					(reason: Error): void => reject(reason)
+					(reason: any): void => reject(reason)
 				);
 			}
 		});
@@ -1060,7 +1060,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		this._flush();
 	}
 
-	private _reject(reason: Error): void {
+	private _reject(reason: any): void {
 		// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
 		// 2.1.3.1 When rejected, a promise must not transition to any other state.
 		assert(this._state === State.Pending);
@@ -1117,7 +1117,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 					called = true;
 					this._resolve(y);
 				},
-				(r: Error): void => {
+				(r: any): void => {
 					if (called) {
 						// 2.3.3.3.3: If both `resolvePromise` and `rejectPromise` are called,
 						// or multiple calls to the same argument are made, the first call
