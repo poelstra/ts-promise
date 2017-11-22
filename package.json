@@ -19,9 +19,9 @@
   },
   "homepage": "https://github.com/poelstra/ts-promise",
   "scripts": {
-    "test": "npm run -s lint && npm run -s mocha",
+    "test": "npm run -s lint && npm run -s build && npm run -s mocha",
     "mocha": "mocha -R spec dist/test/test-*.js",
-    "cover": "istanbul cover --report json _mocha -- -R spec dist/test/test-*.js && remap-istanbul -i coverage/coverage-final.json -t html -o coverage/html-report",
+    "cover": "npm run -s build && istanbul cover --report json _mocha -- -R spec dist/test/test-*.js && remap-istanbul -i coverage/coverage-final.json -t html -o coverage/html-report",
     "lint": "tslint -t verbose src/**/*.ts",
     "build:src": "cd src/lib && tsc",
     "watch:src": "cd src/lib && tsc --watch",
@@ -29,7 +29,10 @@
     "watch:test": "cd src/test && tsc --watch",
     "build": "npm run -s build:test && npm run -s build:src && npm run -s browserify && npm run -s minify",
     "clean": "rimraf -rf dist",
-    "prepublish": "npm run -s build && npm run -s test",
+    "prepare": "npm run -s test",
+    "prepublishOnly": "npm run -s test",
+    "preversion": "npm install",
+    "version": "git add package-lock.json",
     "browserify": "browserify --node --standalone ts-promise ./dist/lib/index.js > ./dist/browser.js",
     "minify": "uglifyjs ./dist/browser.js --compress --mangle --mangle-props --mangle-regex='/^_/' --reserved 'Promise' > ./dist/browser.min.js"
   },
