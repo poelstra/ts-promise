@@ -13,9 +13,8 @@ sourceMapSupport.install({
 });
 
 import { expect } from "chai";
-import Trace from "../lib/Trace";
 import BaseError from "../lib/BaseError";
-import { Promise, Thenable, UnhandledRejectionError, Deferred } from "../lib/Promise";
+import { Promise, Thenable, Deferred, Trace, UnhandledRejection } from "../lib/index";
 import EsPromise from "./espromise";
 
 let boomError = new Error("boom");
@@ -545,7 +544,7 @@ describe("Promise", (): void => {
 			it("accepts various error classes as predicate", () => {
 				let p1 = Promise.reject(new Error()).catch(Error, catcher);
 				let p2 = Promise.reject(new BaseError("", "")).catch(BaseError, catcher);
-				let p3 = Promise.reject(new UnhandledRejectionError(undefined, undefined)).catch(UnhandledRejectionError, catcher);
+				let p3 = Promise.reject(new UnhandledRejection(undefined, undefined)).catch(UnhandledRejection, catcher);
 				Promise.flush();
 				expect(p1.value()).to.equal(caughtSentinel);
 				expect(p2.value()).to.equal(caughtSentinel);
@@ -693,7 +692,7 @@ describe("Promise", (): void => {
 			Promise.resolve().then((): void => {
 				ready = true;
 			});
-			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejection);
 			expect(ready).to.be.false;
 			Promise.flush();
 			expect(ready).to.be.true;
@@ -704,7 +703,7 @@ describe("Promise", (): void => {
 			Promise.resolve().then((): void => {
 				ready = true;
 			});
-			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejection);
 			expect(ready).to.be.false;
 			Promise.flush();
 			expect(ready).to.be.true;
@@ -713,7 +712,7 @@ describe("Promise", (): void => {
 			Promise.resolve().done((): Promise<void> => {
 				return Promise.reject(new Error("boom"));
 			});
-			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejection);
 		});
 		it("should immediately break on asynchronously rejected Thenable", (): void => {
 			var d = Promise.defer();
@@ -722,7 +721,7 @@ describe("Promise", (): void => {
 			});
 			Promise.flush();
 			d.reject(new Error("boom"));
-			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejection);
 		});
 		it("should break on already rejected promise", (): void => {
 			var ready = false;
@@ -730,7 +729,7 @@ describe("Promise", (): void => {
 			Promise.resolve().then((): void => {
 				ready = true;
 			});
-			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejection);
 			expect(ready).to.be.false;
 			Promise.flush();
 			expect(ready).to.be.true;
@@ -743,18 +742,18 @@ describe("Promise", (): void => {
 			}).done();
 			Promise.flush();
 			d.reject(new Error("boom"));
-			expect(() => Promise.flush()).to.throw(UnhandledRejectionError);
+			expect(() => Promise.flush()).to.throw(UnhandledRejection);
 		});
 		it("should support long traces on throw from callback", () => {
 			Promise.setLongTraces(true);
 			Promise.resolve().done(() => { throw new Error("boom"); });
-			var caught: UnhandledRejectionError;
+			var caught: UnhandledRejection;
 			try {
 				Promise.flush();
 			} catch (e) {
 				caught = e;
 			}
-			expect(caught).to.be.instanceof(UnhandledRejectionError);
+			expect(caught).to.be.instanceof(UnhandledRejection);
 			// TODO: assert the trace property for correctness
 			expect(caught.trace.inspect()).to.not.contain("no trace");
 			Promise.setLongTraces(false);
@@ -763,13 +762,13 @@ describe("Promise", (): void => {
 			var p = Promise.resolve();
 			Promise.setLongTraces(true);
 			p.done(() => { throw new Error("boom"); });
-			var caught: UnhandledRejectionError;
+			var caught: UnhandledRejection;
 			try {
 				Promise.flush();
 			} catch (e) {
 				caught = e;
 			}
-			expect(caught).to.be.instanceof(UnhandledRejectionError);
+			expect(caught).to.be.instanceof(UnhandledRejection);
 			// TODO: assert the trace property for correctness
 			expect(caught.trace.inspect()).to.not.contain("no trace");
 			Promise.setLongTraces(false);
@@ -777,13 +776,13 @@ describe("Promise", (): void => {
 		it("should support long traces on rejection without callbacks", () => {
 			Promise.setLongTraces(true);
 			Promise.reject(new Error("boom")).done();
-			var caught: UnhandledRejectionError;
+			var caught: UnhandledRejection;
 			try {
 				Promise.flush();
 			} catch (e) {
 				caught = e;
 			}
-			expect(caught).to.be.instanceof(UnhandledRejectionError);
+			expect(caught).to.be.instanceof(UnhandledRejection);
 			// TODO: assert the trace property for correctness
 			expect(caught.trace.inspect()).to.not.contain("no trace");
 			Promise.setLongTraces(false);
@@ -796,14 +795,14 @@ describe("Promise", (): void => {
 				(<any>e).stack = undefined;
 				throw e;
 			}).done();
-			var caught: UnhandledRejectionError;
+			var caught: UnhandledRejection;
 			try {
 				Promise.flush();
 			} catch (e) {
 				caught = e;
 			}
-			expect(caught).to.be.instanceof(UnhandledRejectionError);
-			expect(caught.stack).to.equal("UnhandledRejectionError: Error: boom");
+			expect(caught).to.be.instanceof(UnhandledRejection);
+			expect(caught.stack).to.equal("UnhandledRejection: Error: boom");
 		});
 	}); // #done()
 
@@ -1023,6 +1022,42 @@ describe("Promise", (): void => {
 		});
 	});
 
+	describe(".onUnhandledRejection()", (): void => {
+		// Note: handlers are already put back to defaults in top-level afterEach
+
+		it("supports custom handler", () => {
+			let results: any[] = [];
+			Promise.onUnhandledRejection((reason: any, doneTrace: Trace) => results.push({ reason, doneTrace }));
+			Promise.reject(boomError).done();
+			Promise.flush();
+			expect(results.length).to.equal(1);
+			expect(results[0].reason).to.equal(boomError);
+			expect(results[0].doneTrace).to.be.instanceof(Trace);
+		});
+
+		it("supports disabling handler", () => {
+			Promise.onUnhandledRejection(false);
+			Promise.reject(boomError).done();
+			Promise.flush();
+		});
+
+		it("supports re-enabling handler", () => {
+			Promise.onUnhandledRejection(false);
+			Promise.onUnhandledRejection(true);
+			Promise.reject(boomError).done();
+			expect(() => {
+				Promise.flush();
+			}).to.throw(UnhandledRejection);
+		});
+
+		it("throws on invalid input", () => {
+			expect(() => Promise.onUnhandledRejection(undefined)).to.throw(TypeError);
+			expect(() => Promise.onUnhandledRejection(null)).to.throw(TypeError);
+			expect(() => Promise.onUnhandledRejection(<any>{})).to.throw(TypeError);
+			expect(() => Promise.onUnhandledRejection(<any>42)).to.throw(TypeError);
+		});
+	});
+
 	describe("long stack traces", (): void => {
 		before(() => {
 			Promise.setLongTraces(true);
@@ -1106,29 +1141,4 @@ describe("Promise", (): void => {
 			Promise.flush();
 		});
 	}); // tracer
-});
-
-describe("UnhandledRejectionError", () => {
-	describe("constructor()", () => {
-		var e = new Error("boom");
-		it("includes reason in message", () => {
-			var ure = new UnhandledRejectionError(e, new Trace());
-			expect(ure.message).to.contain("Error: boom");
-		});
-		it("sets its .reason property to the original error", () => {
-			var ure = new UnhandledRejectionError(e, new Trace());
-			expect(ure.reason).to.equal(e);
-		});
-		it("replaces its stack with that of original error", () => {
-			var ure = new UnhandledRejectionError(e, new Trace());
-			expect(ure.stack).to.contain((<any>e).stack);
-		});
-		it("does not crash if reason doesn't have a stack", () => {
-			/* tslint:disable:no-unused-variable */
-			let ure1 = new UnhandledRejectionError(undefined, new Trace());
-			let ure2 = new UnhandledRejectionError(null, new Trace());
-			let ure3 = new UnhandledRejectionError({}, new Trace());
-			/* tslint:enable:no-unused-variable */
-		});
-	});
 });

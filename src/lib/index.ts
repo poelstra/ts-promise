@@ -5,7 +5,10 @@
  * License: MIT
  */
 
-export { default, Promise, Thenable, UnhandledRejectionError, Deferred, VoidDeferred } from "./Promise";
+export { default, Promise, Thenable, Deferred, VoidDeferred } from "./Promise";
+export { default as Trace } from "./Trace";
+export { UnhandledRejection } from "./rejections";
+export { UnhandledRejection as UnhandledRejectionError } from "./rejections"; // backwards compatibility
 export { default as polyfill } from "./polyfill";
 
 // Temporary, should be moved to its own package some day

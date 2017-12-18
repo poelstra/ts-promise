@@ -9,13 +9,14 @@
 
 // TODO:
 // - remove all "called = true"-type code in resolvers, replace by single check in _resolve()/_reject()
-// - add possibility for an unhandled-rejections-handler
 // - try to remove mangling of Error's .stack property on rejections with longTraces enabled
 
 import async from "./async";
 import { assert } from "./util";
 import Trace from "./Trace";
-import BaseError from "./BaseError";
+import {
+	defaultUnhandledRejectionHandler,
+} from "./rejections";
 
 export interface Thenable<T> {
 	then<R>(onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => R|Thenable<R>): Thenable<R>;
@@ -52,39 +53,6 @@ export interface Inspection<T> {
 	 * @return Rejection reason if rejected, otherwise throws an error.
 	 */
 	reason(): any;
-}
-
-/**
- * Thrown when a rejected promise is explicitly terminated with `.done()`.
- */
-export class UnhandledRejectionError extends BaseError {
-	/**
-	 * Original promise rejection reason.
-	 */
-	public reason: any;
-
-	/**
-	 * Trace of rejected promise.
-	 */
-	public trace: Trace;
-
-	constructor(reason: any, trace: Trace) {
-		super("UnhandledRejectionError", "unhandled rejection: " + reason);
-		this.reason = reason;
-		// TODO: Find a better way to merge the location of `.done()` in the
-		// trace, because nobody will look for this property...
-		this.trace = trace;
-		// In case we have a reason, and it has a stack: use it instead of our
-		// own stack, as it's more helpful to see where the original error was
-		// thrown, than where it was thrown inside the promise lib.
-		// In case we don't have a stack, explicitly state so, to not let people
-		// chase a problem in the promise lib that isn't there...
-		let stack: string = this.reason && typeof this.reason === "object" && this.reason.stack;
-		if (typeof stack !== "string") {
-			stack = String(reason);
-		}
-		this.stack = "UnhandledRejectionError: " + stack;
-	}
 }
 
 var trace: (promise: Promise<any>, msg: string) => void = undefined;
@@ -247,6 +215,7 @@ export interface ErrorClass {
 	new (...args: any[]): Error;
 }
 
+export type UnhandledRejectionHandler = (reason: any, doneTrace: Trace) => void;
 /**
  * Fast, robust, type-safe promise implementation.
  */
@@ -257,6 +226,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private _handlers: Handler<T, any>[] = undefined;
 	private _trace: Trace = undefined;
 
+	private static _onUnhandledRejectionHandler: UnhandledRejectionHandler;
 	/**
 	 * Create new Promise.
 	 *
@@ -919,6 +889,44 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
+	 * Register a callback to be called whenever a rejected Promise reaches a `.done()` call
+	 * without `rejectHandler` argument, or either of the `.done()` callbacks itself
+	 * throws/rejects.
+	 *
+	 * This is similar to Node's `unhandledException` event, in that it is guaranteed to be
+	 * an error, because the programmer explicitly marked the chain with `.done()`.
+	 *
+	 * Node also has an `unhandledRejection` event, which is actually closer to ts-promise's
+	 * `onPossiblyUnhandledRejection` handler.
+	 *
+	 * The default handler will throw an `UnhandledRejection` error, which contains the
+	 * original reason of the rejection.
+	 * In Node, if you don't have an `unhandledException` event handler, that will cause your
+	 * program to terminate after printing the error.
+	 * When overriding the default handler, it is recommended to keep a similar behavior,
+	 * as your program is likely in an unknown state.
+	 *
+	 * @see onPossiblyUnhandledRejection
+	 *
+	 * @param handler Callback called with the rejection reason (typically an `Error`), and a
+	 *                `Trace` to the `.done()` call that terminated the chain. Call e.g.
+	 *                `trace.inspect()` to get the full trace.
+	 *                If `true` is given, the default handler is installed.
+	 *                If `false` is given, a no-op handler is installed.
+	 */
+	public static onUnhandledRejection(handler: boolean | UnhandledRejectionHandler): void {
+		if (handler === true) {
+			Promise._onUnhandledRejectionHandler = defaultUnhandledRejectionHandler;
+		} else if (handler === false) {
+			Promise._onUnhandledRejectionHandler = noop;
+		} else if (typeof handler !== "function") {
+			throw new TypeError("invalid handler: boolean or function expected");
+		} else {
+			Promise._onUnhandledRejectionHandler = handler;
+		}
+	}
+
+	/**
 	 * Enable or disable long stack trace tracking on promises.
 	 *
 	 * This allows tracing a promise chain through the various asynchronous
@@ -1204,10 +1212,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 				// No callback: if we ended in a rejection, throw it, otherwise
 				// all was good.
 				if (this._state === State.Rejected) {
-					let unhandled = new UnhandledRejectionError(this._result, handler.done);
-					// TODO Allow intercepting these
-					// Leave the comment after the throw: may show up in source line in node
-					throw unhandled; // Unhandled exception caught by .done()
+					Promise._onUnhandledRejectionHandler(this._result, handler.done);
 				}
 				return;
 			}
@@ -1223,12 +1228,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 				unwrappingPromise = undefined;
 			} catch (e) {
 				unwrappingPromise = undefined;
-
-				// Wrap in UnhandledRejectionError
-				let unhandled = new UnhandledRejectionError(e, handler.done);
-				// TODO Allow intercepting these
-				// Leave the comment after the throw: may show up in source line in node
-				throw unhandled; // Unhandled exception caught by .done()
+				Promise._onUnhandledRejectionHandler(e, handler.done);
 			}
 			return;
 		}
@@ -1282,5 +1282,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		handler.promise._unwrap(handler);
 	}
 }
+
+// Install default rejection handlers
+Promise.onUnhandledRejection(true);
 
 export default Promise;
