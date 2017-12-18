@@ -954,7 +954,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *
 	 * @param tracer Callback called for various stages during lifetime of a promise
 	 */
-	public static setTracer(tracer: (promise: Promise<any>, msg: string) => void): void {
+	// tslint:disable-next-line:no-null-keyword
+	public static setTracer(tracer: undefined | null | ((promise: Promise<any>, msg: string) => void)): void {
 		if (typeof tracer === "function") {
 			trace = tracer;
 		} else {
