@@ -25,6 +25,23 @@ function noop(): void {
 
 describe("Promise", (): void => {
 
+	beforeEach(() => {
+		// Stuff with .done() is explicitly handled everywhere
+		Promise.onUnhandledRejection(true);
+		// Unhandled rejections are ignored in most tests, so disable
+		// detection of them
+		Promise.onPossiblyUnhandledRejection(false);
+		Promise.onPossiblyUnhandledRejectionHandled(false);
+	});
+
+	afterEach(() => {
+		// Back to defaults
+		Promise.flush();
+		Promise.onUnhandledRejection(true);
+		Promise.onPossiblyUnhandledRejection(true);
+		Promise.onPossiblyUnhandledRejectionHandled(true);
+	});
+
 	it("calls then()'s in a logical order", (): void => {
 		var resolve: (v: number) => void;
 		var p = new Promise((res: any, rej: any): void => {

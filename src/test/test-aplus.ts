@@ -15,8 +15,24 @@ var adapter = {
 	resolved: (value: any): Promise<any> => Promise.resolve(value),
 };
 
+function ureOff(): void {
+	Promise.onPossiblyUnhandledRejection(false);
+	Promise.onPossiblyUnhandledRejectionHandled(false);
+}
+
+function ureOn(): void {
+	Promise.flush();
+	Promise.onPossiblyUnhandledRejection(true);
+	Promise.onPossiblyUnhandledRejectionHandled(true);
+}
+
 describe("Promises/A+ Tests", (): void => {
+	before(ureOff);
+	after(ureOn);
+
 	/* tslint:disable:no-require-imports */
+	ureOff();
 	require("promises-aplus-tests").mocha(adapter);
+	ureOn();
 	/* tslint:enable:no-require-imports */
 });
