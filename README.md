@@ -226,40 +226,6 @@ Methods on Promise instances:
   If the current promise is rejected, the resulting promise is also rejected,
   without waiting for the timer.
 
-# TODO
-
-Planned features (in fairly arbitrary order):
-- Auto-generate online docs using TypeDoc
-- Replace/update the (slightly out-of-date) docs above
-- Implement property-based catch() predicate (error constructor(s) and function
-  already done)
-- Possibly-unhandled-rejection detection
-- Non-V8-support: it works in non-V8, but long stack traces aren't available
-- Switch (back) to process.nextTick() / MutationObserver etc
-- Implement `.promisify()`
-- Simplify code somewhat more (most notably reduce duplication of 'called'-logic
-  when resolving, maybe also slightly simplify async callback queue
-  implementation)
-
-Interesting ideas that need further investigation:
-- Support for differentiating between programmer errors (e.g. assertions, null
-  derefences) and 'expected' errors. E.g. bluebird has `.error()` and the
-  concept of OperationalError, but this may not be the best way to interoperate
-  with other libraries.
-- Possibly-unterminated-promise-chain detection. Wild idea that could help to
-  always make sure to either return a promise from a function, or properly
-  terminate it, thus reducing the chance of a PossiblyUnhandledRejectionError at
-  runtime.
-- `.settle()` and/or other form of simply waiting for a bunch of void-promises,
-  but await all of them before returning, even in case of errors. To prevent
-  e.g. shutting things down while some tasks were still running.
-- Split off async callback queue and stack trace handling into separate packages
-  to allow re-use by other packages.
-
-- UMD support? Submit an issue if you think this is useful to you, as I'm more
-  of a browserify guy myself.
-
-
 # Development
 
 Found an issue? Have an idea? Wanna help? Submit an issue!

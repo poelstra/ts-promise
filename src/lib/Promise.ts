@@ -7,10 +7,6 @@
 
 /* tslint:disable:no-unused-expression */ // prevent errors on `trace && trace(....)`
 
-// TODO:
-// - remove all "called = true"-type code in resolvers, replace by single check in _resolve()/_reject()
-// - try to remove mangling of Error's .stack property on rejections with longTraces enabled
-
 import async from "./async";
 import { assert } from "./util";
 import Trace from "./Trace";
