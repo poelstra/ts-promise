@@ -535,7 +535,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *   }
 	 * });
 	 *
-	 * @param  handler [description]
+	 * @param  handler Callback called with promise when it is resolved.
 	 * @return promise with same value/reason as this one, after `handler`'s
 	 *         result (if any) has been fulfilled, or a promise rejected with
 	 *         `handler`'s error if it threw one or returned a rejection.
