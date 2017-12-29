@@ -479,7 +479,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *                    or promise for a value.
 	 * @return Promise for original value, or 'replaced' value in case of error
 	 */
-	public catch<R>(...args: any[]): Promise<T|R> {
+	public catch<R>(): Promise<T|R> {
 		if (arguments.length === 1) {
 			let onRejected: (reason: any) => R|Thenable<R> = arguments[0];
 			return this.then(undefined, onRejected);
