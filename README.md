@@ -14,11 +14,12 @@ TS-Promise is a fast, robust, type-safe promise library.
 Features:
 - Promises/A+ 1.1 compliant
 - ES6 Promise interface compatible
+- Possibly-unhandled rejection detection (can be disabled)
+- Early throwing of unhandled rejections with `.done()`
 - Long stack traces support (switchable at runtime!)
 - [Fast](https://github.com/poelstra/ts-promise-benchmark)
 - Small (gzipped minified version 0.3.1 weighs only 3.5kB, everything included)
 - Efficiently supports infinite recursion (with and without long stack traces)
-- Early throwing of unhandled rejections with `.done()`
 - No progression handlers
 - Optional explicit promise chain flushing, useful for test frameworks
 - Readable code (not too many tricks)

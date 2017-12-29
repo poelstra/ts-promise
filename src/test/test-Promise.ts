@@ -19,6 +19,10 @@ import EsPromise from "./espromise";
 
 let boomError = new Error("boom");
 
+function noop(): void {
+	/* no-op */
+}
+
 describe("Promise", (): void => {
 
 	it("calls then()'s in a logical order", (): void => {
@@ -1056,6 +1060,267 @@ describe("Promise", (): void => {
 			expect(() => Promise.onUnhandledRejection(<any>{})).to.throw(TypeError);
 			expect(() => Promise.onUnhandledRejection(<any>42)).to.throw(TypeError);
 		});
+	});
+
+	describe(".onPossiblyUnhandledRejection()", (): void => {
+		// tslint:disable:object-literal-sort-keys
+
+		// Note: handlers are already put back to defaults in top-level afterEach
+
+		let nodeEvents: { reason: any, promise: Promise<any> }[];
+		function nodeUnhandledRejectionHandler(reason: any, promise: Promise<any>): void {
+			nodeEvents.push({ reason, promise });
+		}
+		beforeEach(() => {
+			nodeEvents = [];
+			process.on("unhandledRejection", nodeUnhandledRejectionHandler);
+		});
+		afterEach(() => {
+			process.removeListener("unhandledRejection", nodeUnhandledRejectionHandler);
+		});
+
+		it("supports custom handler", () => {
+			let results: Promise<any>[] = [];
+			Promise.onPossiblyUnhandledRejection((promise: Promise<any>) => results.push(promise));
+			const p = Promise.reject(boomError);
+			Promise.flush();
+			expect(results).to.deep.equal([p]);
+		});
+
+		it("supports disabling handler", () => {
+			Promise.onPossiblyUnhandledRejection(false);
+			Promise.reject(boomError);
+			Promise.flush();
+			expect(nodeEvents).to.deep.equal([]);
+		});
+
+		it("supports re-enabling handler", () => {
+			Promise.onPossiblyUnhandledRejection(false);
+			Promise.onPossiblyUnhandledRejection(true);
+			const p = Promise.reject(boomError);
+			Promise.flush();
+			expect(nodeEvents).to.deep.equal([
+				{ reason: boomError, promise: p },
+			]);
+		});
+
+		it("throws on invalid input", () => {
+			expect(() => Promise.onPossiblyUnhandledRejection(undefined)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejection(null)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejection(<any>{})).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejection(<any>42)).to.throw(TypeError);
+		});
+
+		// tslint:enable:object-literal-sort-keys
+	});
+
+	describe(".onPossiblyUnhandledRejectionHandled()", (): void => {
+		// tslint:disable:object-literal-sort-keys
+
+		// Note: handlers are already put back to defaults in top-level afterEach
+
+		let nodeEvents: { promise: Promise<any> }[];
+		function nodeRejectionHandledHandler(promise: Promise<any>): void {
+			nodeEvents.push({ promise });
+		}
+		beforeEach(() => {
+			nodeEvents = [];
+			Promise.onPossiblyUnhandledRejection(false);
+			process.on("rejectionHandled", nodeRejectionHandledHandler);
+		});
+		afterEach(() => {
+			process.removeListener("rejectionHandled", nodeRejectionHandledHandler);
+		});
+
+		it("supports custom handler", () => {
+			let results: Promise<any>[] = [];
+			Promise.onPossiblyUnhandledRejectionHandled((promise: Promise<any>) => results.push(promise));
+			const p = Promise.reject(boomError);
+			Promise.flush();
+			p.catch(noop);
+			Promise.flush();
+			expect(results).to.deep.equal([p]);
+		});
+
+		it("supports disabling handler", () => {
+			Promise.onPossiblyUnhandledRejectionHandled(false);
+			const p = Promise.reject(boomError);
+			Promise.flush();
+			p.catch(noop);
+			Promise.flush();
+			expect(nodeEvents).to.deep.equal([]);
+		});
+
+		it("supports re-enabling handler", () => {
+			Promise.onPossiblyUnhandledRejectionHandled(false);
+			Promise.onPossiblyUnhandledRejectionHandled(true);
+			const p = Promise.reject(boomError);
+			Promise.flush();
+			p.catch(noop);
+			Promise.flush();
+			expect(nodeEvents).to.deep.equal([
+				{ promise: p },
+			]);
+		});
+
+		it("throws on invalid input", () => {
+			expect(() => Promise.onPossiblyUnhandledRejectionHandled(undefined)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejectionHandled(null)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejectionHandled(<any>{})).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejectionHandled(<any>42)).to.throw(TypeError);
+		});
+
+		// tslint:enable:object-literal-sort-keys
+	});
+
+	describe("possibly unhandled rejections", (): void => {
+		// tslint:disable:object-literal-sort-keys
+
+		interface Event {
+			type: "unhandled" | "handled" | "catch";
+			promise: Promise<any>;
+		}
+		let events: Event[];
+
+		beforeEach(() => {
+			events = [];
+			Promise.onPossiblyUnhandledRejection((promise) => events.push({ type: "unhandled", promise }));
+			Promise.onPossiblyUnhandledRejectionHandled((promise) => events.push({ type: "handled", promise }));
+		});
+
+		it("should notify simple rejection", () => {
+			const p = Promise.reject(boomError);
+			Promise.flush();
+			Promise.flush();
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p },
+			]);
+		});
+
+		it("should not notify handled rejection", () => {
+			const p = Promise.reject(boomError);
+			p.catch(noop);
+			Promise.flush();
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should notify late handled rejection", () => {
+			const p = Promise.reject(boomError);
+			Promise.flush();
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p },
+			]);
+			p.catch(() => events.push({ type: "catch", promise: undefined }));
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p },
+			]);
+			Promise.flush();
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p },
+				{ type: "catch", promise: undefined },
+				{ type: "handled", promise: p },
+			]);
+		});
+
+		it("should not notify for parent when slave is handled (sync)", () => {
+			const p1 = Promise.reject(boomError);
+			const p2 = Promise.resolve(p1);
+			p2.catch(noop);
+			Promise.flush();
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should not notify for parent when slave is handled (async)", () => {
+			const d1 = Promise.defer();
+			const p2 = Promise.resolve(d1.promise);
+			p2.catch(noop);
+			d1.reject(boomError);
+			Promise.flush();
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should not notify for parent when slave is unhandled (sync)", () => {
+			const p1 = Promise.reject(boomError);
+			const p2 = Promise.resolve(p1);
+			Promise.flush();
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p2 },
+			]);
+		});
+
+		it("should not notify for parent when slave is unhandled (async)", () => {
+			const d1 = Promise.defer();
+			const p1 = d1.promise;
+			const p2 = Promise.resolve(p1);
+			d1.reject(boomError);
+			Promise.flush();
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p2 },
+			]);
+		});
+
+		it("should not notify for parent when derived handles it (sync)", () => {
+			const p1 = Promise.reject(boomError);
+			const p2 = p1.then(noop);
+			p2.catch(noop);
+			Promise.flush();
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should not notify for parent when derived handles it (async)", () => {
+			const d1 = Promise.defer();
+			const p1 = d1.promise;
+			const p2 = p1.then(noop);
+			p2.catch(noop);
+			d1.reject(boomError);
+			Promise.flush();
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should not notify for parent when done() is handling it (sync)", () => {
+			const p1 = Promise.reject(boomError);
+			p1.done();
+			expect(() => {
+				Promise.flush();
+			}).to.throw(UnhandledRejection);
+			Promise.flush(); // just in case
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should not notify for parent when done() is handling it (async)", () => {
+			const d1 = Promise.defer();
+			const p1 = d1.promise;
+			p1.done();
+			d1.reject(boomError);
+			expect(() => {
+				Promise.flush();
+			}).to.throw(UnhandledRejection);
+			Promise.flush(); // just in case
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should not notify when suppressed", () => {
+			const p1 = Promise.reject(boomError);
+			p1.suppressUnhandledRejections();
+			Promise.flush();
+			expect(events).to.deep.equal([]);
+		});
+
+		it("should notify when suppressed late", () => {
+			const p1 = Promise.reject(boomError);
+			Promise.flush();
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p1 },
+			]);
+			p1.suppressUnhandledRejections();
+			Promise.flush();
+			expect(events).to.deep.equal([
+				{ type: "unhandled", promise: p1 },
+				{ type: "handled", promise: p1 },
+			]);
+		});
+
+		// tslint:enable:object-literal-sort-keys
 	});
 
 	describe("long stack traces", (): void => {

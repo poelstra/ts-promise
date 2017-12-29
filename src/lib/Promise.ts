@@ -6,12 +6,15 @@
  */
 
 /* tslint:disable:no-unused-expression */ // prevent errors on `trace && trace(....)`
+/* tslint:disable:no-bitwise */ // for flags
 
 import async from "./async";
 import { assert } from "./util";
 import Trace from "./Trace";
 import {
 	defaultUnhandledRejectionHandler,
+	defaultPossiblyUnhandledRejectionHandler,
+	defaultPossiblyUnhandledRejectionHandledHandler,
 } from "./rejections";
 
 export interface Thenable<T> {
@@ -59,6 +62,14 @@ const enum State {
 	Pending,
 	Fulfilled,
 	Rejected
+}
+
+/**
+ * Bit flags about a Promise's internal state.
+ */
+const enum Flags {
+	RejectionHandled = 1,
+	UnhandledRejectionNotified = 2,
 }
 
 function internalResolver(fulfill: (value: any) => void, reject: (reason: any) => void): void {
@@ -212,6 +223,9 @@ export interface ErrorClass {
 }
 
 export type UnhandledRejectionHandler = (reason: any, doneTrace: Trace) => void;
+export type PossiblyUnhandledRejectionHandler = (promise: Promise<any>) => void;
+export type PossiblyUnhandledRejectionHandledHandler = (promise: Promise<any>) => void;
+
 /**
  * Fast, robust, type-safe promise implementation.
  */
@@ -220,9 +234,13 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private _state: State = State.Pending;
 	private _result: any = undefined; // Can be fulfillment value or rejection reason
 	private _handlers: Handler<T, any>[] = undefined;
+	private _flags: number = 0;
 	private _trace: Trace = undefined;
 
 	private static _onUnhandledRejectionHandler: UnhandledRejectionHandler;
+	private static _onPossiblyUnhandledRejectionHandler: PossiblyUnhandledRejectionHandler;
+	private static _onPossiblyUnhandledRejectionHandledHandler: PossiblyUnhandledRejectionHandledHandler;
+
 	/**
 	 * Create new Promise.
 	 *
@@ -528,6 +546,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
+	 * Return `true` when promise is fulfilled, `false` otherwise.
+	 *
 	 * @return `true` when promise is fulfilled, `false` otherwise.
 	 */
 	public isFulfilled(): boolean {
@@ -535,6 +555,11 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
+	 * Return `true` when promise is rejected, `false` otherwise.
+	 *
+	 * Note: this does not consider the rejection to be 'handled', if
+	 * it is rejected.
+	 *
 	 * @return `true` when promise is rejected, `false` otherwise.
 	 */
 	public isRejected(): boolean {
@@ -542,6 +567,9 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
+	 * Return `true` when promise is pending (may be resolved to another pending
+	 * promise), `false` otherwise.
+	 *
 	 * @return `true` when promise is pending (may be resolved to another pending
 	 *         promise), `false` otherwise.
 	 */
@@ -550,6 +578,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
+	 * Return fulfillment value if fulfilled, otherwise throws an error.
+	 *
 	 * @return Fulfillment value if fulfilled, otherwise throws an error.
 	 */
 	public value(): T {
@@ -560,13 +590,37 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
-	 * @return Rejection reason if rejected, otherwise throws an error.
+	 * Return rejection value if rejected, otherwise throws an error.
+	 *
+	 * Note: this does not consider the rejection to be 'handled', if
+	 * it is rejected. To do so, explicitly call e.g.
+	 * `.suppressUnhandledRejections()`.
+	 *
+	 * @return Rejection value if rejected, otherwise throws an error.
 	 */
 	public reason(): any {
 		if (!this.isRejected()) {
 			throw new Error("Promise is not rejected");
 		}
 		return this._result;
+	}
+
+	/**
+	 * Prevent this promise from throwing a PossiblyUnhandledRejection in
+	 * case it becomes rejected. Useful when the rejection will be handled later
+	 * (i.e. after the current 'tick'), or when the rejection is to be ignored
+	 * completely.
+	 *
+	 * This is equivalent to calling `.catch(() => {})`, but more efficient.
+	 *
+	 * Note: any derived promise (e.g. by calling `.then(cb)`) causes a new
+	 * promise to be created, which can still cause the rejection to be thrown.
+	 *
+	 * Note: if the rejection was already notified, the rejection-handled handler
+	 * will be called.
+	 */
+	public suppressUnhandledRejections(): void {
+		this._setRejectionHandled();
 	}
 
 	/**
@@ -923,6 +977,72 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	}
 
 	/**
+	 * Register a callback to be called whenever a rejected Promise is not handled
+	 * by any `.catch()` (or second argument to `.then()`) at the end of one turn of the
+	 * event loop.
+	 *
+	 * Note that such a rejected promise may be handled later (by e.g. calling `.catch(() => {})`
+	 * on it). In that case, a subsequent call to an `onPossiblyUnhandledRejectionHandled` callback
+	 * will be made.
+	 *
+	 * This mechanism is equivalent to Node's `unhandledRejection` event.
+	 *
+	 * The default handler will:
+	 * - emit Node's `unhandledRejection` event if present, or
+	 * - emit an `unhandledrejection` (note small R) `PromiseRejectionEvent` on `window` or `self` if present, or
+	 * - log the rejection using `console.warn()`.
+	 *
+	 * Note: when attaching an `unhandledrejection` handler in the browser, make sure to
+	 * call `event.preventDefault()` to prevent ts-promise's default fallback logging.
+	 *
+	 * @see onUnhandledRejection
+	 * @see onPossiblyUnhandledRejectionHandled
+	 *
+	 * @param handler Callback called with the (so-far) unhandled rejected promise.
+	 *                If `true` is given, the default handler is installed.
+	 *                If `false` is given, a no-op handler is installed.
+	 */
+	public static onPossiblyUnhandledRejection(handler: boolean | PossiblyUnhandledRejectionHandler): void {
+		if (handler === true) {
+			Promise._onPossiblyUnhandledRejectionHandler = defaultPossiblyUnhandledRejectionHandler;
+		} else if (handler === false) {
+			Promise._onPossiblyUnhandledRejectionHandler = noop;
+		} else if (typeof handler !== "function") {
+			throw new TypeError("invalid handler: boolean or function expected");
+		} else {
+			Promise._onPossiblyUnhandledRejectionHandler = handler;
+		}
+	}
+
+	/**
+	 * Register a callback to be called whenever a rejected promise previously reported as
+	 * 'possibly unhandled', now becomes handled.
+	 *
+	 * This mechanism is equivalent to Node's `rejectionHandled` event.
+	 *
+	 * The default handler will emit Node's `rejectionHandled` event if present, or emit a
+	 * `rejectionhandled` (note small R) event on `window` (or `self`) if present.
+	 *
+	 * @see onPossiblyUnhandledRejection
+	 *
+	 * @param handler Callback called with a rejected promise that was previously reported as
+	 *                'possibly unhandled'.
+	 *                If `true` is given, the default handler is installed.
+	 *                If `false` is given, a no-op handler is installed.
+	 */
+	public static onPossiblyUnhandledRejectionHandled(handler: boolean | PossiblyUnhandledRejectionHandledHandler): void {
+		if (handler === true) {
+			Promise._onPossiblyUnhandledRejectionHandledHandler = defaultPossiblyUnhandledRejectionHandledHandler;
+		} else if (handler === false) {
+			Promise._onPossiblyUnhandledRejectionHandledHandler = noop;
+		} else if (typeof handler !== "function") {
+			throw new TypeError("invalid handler: boolean or function expected");
+		} else {
+			Promise._onPossiblyUnhandledRejectionHandledHandler = handler;
+		}
+	}
+
+	/**
 	 * Enable or disable long stack trace tracking on promises.
 	 *
 	 * This allows tracing a promise chain through the various asynchronous
@@ -1006,6 +1126,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		// 2.3.2: If `x` is a promise, adopt its state
 		if (x instanceof Promise) {
 			x._setSource(this);
+			x._setRejectionHandled(); // we take over responsibility now
 			if (x._state === State.Pending) {
 				// 2.3.2.1: If `x` is pending, `promise` must remain pending until `x` is fulfilled or rejected.
 				this._followPromise(x);
@@ -1086,7 +1207,31 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 				});
 			}
 		}
+		// Schedule check for possibly unhandled rejections, if not already handled
+		if (!(this._flags & Flags.RejectionHandled)) {
+			async.enqueueIdle(Promise._unhandledRejectionChecker, this);
+		}
 		this._flush();
+	}
+
+	private _setRejectionHandled(): void {
+		if (!(this._flags & Flags.RejectionHandled) && (this._flags & Flags.UnhandledRejectionNotified)) {
+			// The rejection has been declared as PossiblyUnhandledRejection
+			// before, so declare it handled again.
+			async.enqueue(Promise._onPossiblyUnhandledRejectionHandledHandler, this);
+		}
+		this._flags |= Flags.RejectionHandled;
+		trace && trace(this, "rejectionHandled");
+	}
+
+	private _doCheckUnhandledRejection(): void {
+		// We get here if this promise is rejected, and wasn't handled at the
+		// time it was rejected. Emit a PossiblyUnhandledRejection in case
+		// it still isn't handled yet.
+		if (!(this._flags & Flags.RejectionHandled) && !(this._flags & Flags.UnhandledRejectionNotified)) {
+			this._flags |= Flags.UnhandledRejectionNotified;
+			async.enqueue(Promise._onPossiblyUnhandledRejectionHandler, this);
+		}
 	}
 
 	private _followPromise(slave: Promise<any>): void {
@@ -1169,6 +1314,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 				this._handlers[i] = h;
 			}
 		}
+		this._setRejectionHandled();
 	}
 
 	/**
@@ -1278,9 +1424,19 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private static _unwrapper(handler: Handler<any, any>): void {
 		handler.promise._unwrap(handler);
 	}
+
+	/**
+	 * Helper for checking for possibly unhandled rejections.
+	 * @param promise The Promise to check
+	 */
+	private static _unhandledRejectionChecker(promise: Promise<any>): void {
+		promise._doCheckUnhandledRejection();
+	}
 }
 
 // Install default rejection handlers
 Promise.onUnhandledRejection(true);
+Promise.onPossiblyUnhandledRejection(true);
+Promise.onPossiblyUnhandledRejectionHandled(true);
 
 export default Promise;
