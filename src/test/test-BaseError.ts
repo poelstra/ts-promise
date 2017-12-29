@@ -30,5 +30,6 @@ describe("BaseError", () => {
 		expect(typeof e.stack).to.equal("string");
 	});
 
-	it("falls back to dummy trace when not supported"); // Think of way to change hasStacks
+	// TODO Think of ways to properly test behavior on different platforms,
+	// ideally merge it into the full coverage results.
 });
