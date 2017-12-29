@@ -639,7 +639,6 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			case State.Pending: state = "pending"; break;
 			case State.Fulfilled: state = "fulfilled"; break;
 			case State.Rejected: state = "rejected"; break;
-			/* istanbul ignore next */
 			default: state = "unknown";
 		}
 		return `[Promise ${this._id}: ${state}]`;

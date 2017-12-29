@@ -936,6 +936,13 @@ describe("Promise", (): void => {
 			var p = Promise.reject(new Error("boom"));
 			expect(p.toString()).to.match(/^\[Promise \d+: rejected\]$/);
 		});
+		it("returns a readable representation for a Promise with invalid state", () => {
+			// Just to cover the `default` switch case, which needs to be present for
+			// ts-lint...
+			var p = Promise.resolve();
+			(<any>p)._state = -1;
+			expect(p.toString()).to.match(/^\[Promise \d+: unknown\]$/);
+		});
 	});
 
 	describe("#inspect()", () => {
