@@ -182,4 +182,54 @@ describe("async", () => {
 		global.setImmediate = oldSetImmediate;
 		global.setTimeout = oldSetTimeout;
 	});
+
+	describe("idle callbacks", () => {
+		let results: string[];
+		beforeEach(() => {
+			results = [];
+		});
+
+		function cb(name: string): () => void {
+			return () => results.push(name);
+		}
+		it("runs idle callback after normal callback", () => {
+			async.enqueueIdle(cb("idle"));
+			async.enqueue(cb("normal"));
+			async.flush();
+			expect(results).to.deep.equal(["normal", "idle"]);
+		});
+
+		it("runs idle callback after normal callback, when enqueueing normal from normal", () => {
+			async.enqueueIdle(cb("idle"));
+			async.enqueue(() => {
+				results.push("normal");
+				async.enqueue(cb("normal2"));
+			});
+			async.flush();
+			expect(results).to.deep.equal(["normal", "normal2", "idle"]);
+		});
+
+		it("completes idle queue, then new normals, then new idles", () => {
+			async.enqueueIdle(() => {
+				results.push("idle1");
+				async.enqueueIdle(cb("idle3"));
+				async.enqueue(() => {
+					results.push("normal2");
+					async.enqueue(cb("normal4"));
+					async.enqueueIdle(cb("idle5"));
+				});
+			});
+			async.enqueueIdle(() => {
+				results.push("idle2");
+				async.enqueueIdle(cb("idle4"));
+				async.enqueue(cb("normal3"));
+			});
+			async.enqueue(cb("normal1"));
+			async.flush();
+			expect(results).to.deep.equal([
+				"normal1", "idle1", "idle2",
+				"normal2", "normal3", "normal4", "idle3", "idle4", "idle5",
+			]);
+		});
+	});
 });
