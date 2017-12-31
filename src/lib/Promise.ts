@@ -97,14 +97,6 @@ function wrapNonError(a: any): Error {
 	return a;
 }
 
-interface Resolver<T> {
-	(resolve: (value: T|Thenable<T>) => void, reject: (reason: any) => void): void;
-}
-
-interface ThenMethod<X, T> {
-	(resolve: (value: X|Thenable<X>) => T|Thenable<T>, reject: (reason: any) => T|Thenable<T>): void;
-}
-
 interface FulfillmentHandler<T, R> {
 	(value: T|Thenable<T>): R|Thenable<R>;
 }
@@ -1141,7 +1133,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		// 2.3.3: Otherwise, if `x` is an object or function,
 		if (typeof x === "object" || typeof x === "function") {
 			// 2.3.3.1: Let `then` be `x.then`
-			var then: GetThenError|Resolver<T> = this._tryGetThen(x);
+			var then: GetThenError|Thenable<T>["then"] = this._tryGetThen(x);
 			// 2.3.3.2: If retrieving the property `x.then` results in a thrown
 			// exception `e`, reject `promise` with `e` as the reason.
 			if (then === getThenError) {
@@ -1151,7 +1143,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			// 2.3.3.3: If `then` is a function, call it with `x` as `this`,
 			//          first argument `resolvePromise`, and second argument `rejectPromise`
 			if (typeof then === "function") {
-				this._followThenable(<Thenable<T>>x, <ThenMethod<any, T>>then);
+				this._followThenable(<Thenable<T>>x, then);
 				return;
 			}
 			// 2.3.3.4: If `then` is not a function, fulfill promise with `x`
@@ -1160,7 +1152,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		this._fulfill(<T>x);
 	}
 
-	private _tryGetThen(x: T|Thenable<T>): GetThenError|Resolver<T> {
+	private _tryGetThen(x: T|Thenable<T>): GetThenError|Thenable<T>["then"] {
 		try {
 			// 2.3.3.1: Let `then` be `x.then`
 			var then = (<any>x).then;
@@ -1242,7 +1234,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		slave._enqueue(undefined, undefined, this, undefined);
 	}
 
-	private _followThenable(slave: Thenable<any>, then: Function): void {
+	private _followThenable(slave: Thenable<T>, then: Thenable<T>["then"]): void {
 		// 2.1.2.1 When fulfilled, a promise must not transition to any other state.
 		// 2.1.3.1 When rejected, a promise must not transition to any other state.
 		assert(this._state === State.Pending);
