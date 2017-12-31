@@ -18,8 +18,8 @@ import {
 } from "./rejections";
 
 export interface Thenable<T> {
-	then<R>(onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => R|Thenable<R>): Thenable<R>;
-	then<R>(onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => void): Thenable<R|void>;
+	then<R>(this: Thenable<T>, onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => R|Thenable<R>): Thenable<R>;
+	then<R>(this: Thenable<T>, onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => void): Thenable<R|void>;
 }
 
 /**
