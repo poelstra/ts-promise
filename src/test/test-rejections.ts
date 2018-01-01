@@ -19,24 +19,24 @@ import Trace from "../lib/Trace";
 describe("rejections", () => {
 	describe("UnhandledRejection", () => {
 		describe("constructor()", () => {
-			var e = new Error("boom");
+			const e = new Error("boom");
 			it("includes reason in message", () => {
-				var ur = new UnhandledRejection(e, new Trace());
+				const ur = new UnhandledRejection(e, new Trace());
 				expect(ur.message).to.contain("Error: boom");
 			});
 			it("sets its .reason property to the original error", () => {
-				var ur = new UnhandledRejection(e, new Trace());
+				const ur = new UnhandledRejection(e, new Trace());
 				expect(ur.reason).to.equal(e);
 			});
 			it("replaces its stack with that of original error", () => {
-				var ur = new UnhandledRejection(e, new Trace());
+				const ur = new UnhandledRejection(e, new Trace());
 				expect(ur.stack).to.contain((<any>e).stack);
 			});
 			it("does not crash if reason doesn't have a stack", () => {
 				/* tslint:disable:no-unused-variable */
-				let ur1 = new UnhandledRejection(undefined, new Trace());
-				let ur2 = new UnhandledRejection(null, new Trace());
-				let ur3 = new UnhandledRejection({}, new Trace());
+				const ur1 = new UnhandledRejection(undefined, new Trace());
+				const ur2 = new UnhandledRejection(null, new Trace());
+				const ur3 = new UnhandledRejection({}, new Trace());
 				/* tslint:enable:no-unused-variable */
 			});
 		});

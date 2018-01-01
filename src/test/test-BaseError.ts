@@ -11,7 +11,7 @@ import { expect } from "chai";
 import BaseError from "../lib/BaseError";
 
 describe("BaseError", () => {
-	var e: BaseError;
+	let e: BaseError;
 
 	beforeEach(() => {
 		e = new BaseError("MyBaseError", "my base error");

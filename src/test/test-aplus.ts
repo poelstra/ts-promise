@@ -9,7 +9,7 @@ import "source-map-support/register";
 
 import { Deferred, Promise } from "../lib/Promise";
 
-var adapter = {
+const adapter = {
 	deferred: (): Deferred<any> => Promise.defer(),
 	rejected: (reason: Error): Promise<any> => Promise.reject(reason),
 	resolved: (value: any): Promise<any> => Promise.resolve(value),

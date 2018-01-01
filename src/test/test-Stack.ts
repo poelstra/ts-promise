@@ -15,8 +15,8 @@ describe("Stack", () => {
 		function test(): Stack {
 			return new Stack();
 		}
-		var s = test();
-		var lines = s.inspect().split("\n");
+		const s = test();
+		const lines = s.inspect().split("\n");
 		expect(lines[0]).to.contain("at test (");
 	});
 
@@ -30,8 +30,8 @@ describe("Stack", () => {
 		function test3(): Stack {
 			return new Stack(test2);
 		}
-		var s = test1();
-		var lines = s.inspect().split("\n");
+		const s = test1();
+		const lines = s.inspect().split("\n");
 		expect(lines[0]).to.contain("at test1 (");
 	});
 

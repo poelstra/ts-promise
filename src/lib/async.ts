@@ -35,8 +35,8 @@ class CallQueue {
 	 */
 	public flush(): void {
 		while (this._first < this.length) {
-			var callback = this[this._first];
-			var arg = this[this._first + 1];
+			const callback = this[this._first];
+			const arg = this[this._first + 1];
 			this[this._first] = this[this._first + 1] = undefined;
 			this._first += 2;
 			callback(arg);
@@ -269,5 +269,5 @@ export class Async {
 	}
 }
 
-export var async = new Async();
+export let async = new Async();
 export default async;

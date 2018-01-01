@@ -62,9 +62,9 @@ export interface Inspection<T> {
 	reason(): any;
 }
 
-var trace: ((promise: Promise<any>, msg: string) => void) | undefined;
+let trace: ((promise: Promise<any>, msg: string) => void) | undefined;
 
-var longTraces: boolean = false;
+let longTraces: boolean = false;
 
 const enum State {
 	Pending,
@@ -94,7 +94,7 @@ interface GetThenError {
 	error: any;
 }
 
-var getThenError: GetThenError = {
+const getThenError: GetThenError = {
 	error: undefined,
 };
 
@@ -136,7 +136,7 @@ interface Handler<T, R> {
 	done: Trace; // Will be undefined if slave is truthy
 }
 
-var dummyDoneTrace = new Trace();
+const dummyDoneTrace = new Trace();
 
 /**
  * Combination of a promise and its resolve/reject functions.
@@ -204,9 +204,9 @@ export interface VoidDeferred extends Deferred<void> {
  * Used to set the source of newly created promises.
  * We guarantee that at most one callback of a then() is running at any time.
  */
-var unwrappingPromise: Promise<any> | undefined;
+let unwrappingPromise: Promise<any> | undefined;
 
-var promiseIdCounter = 0;
+let promiseIdCounter = 0;
 
 /**
  * Generic Error class descriptor.
@@ -269,7 +269,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			throw new TypeError("Promise resolver is not a function");
 		}
 
-		var called = false;
+		let called = false;
 		try {
 			resolver(
 				(y: T): void => {
@@ -352,7 +352,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		}
 
 		// Construct new Promise, but use subclassed constructor, if any
-		var slave = new (Object.getPrototypeOf(this).constructor)(internalResolver);
+		const slave = new (Object.getPrototypeOf(this).constructor)(internalResolver);
 		slave._setSource(this);
 		this._enqueue(onFulfilled, onRejected, slave, undefined);
 		return slave;
@@ -463,11 +463,11 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 */
 	public catch<R>(): Promise<T|R> {
 		if (arguments.length === 1) {
-			let onRejected: (reason: any) => R|Thenable<R> = arguments[0];
+			const onRejected: (reason: any) => R|Thenable<R> = arguments[0];
 			return this.then(undefined, onRejected);
 		} else {
-			let predicate: any = arguments[0];
-			let onRejected: (reason: any) => R|Thenable<R> = arguments[1];
+			const predicate: any = arguments[0];
+			const onRejected: (reason: any) => R|Thenable<R> = arguments[1];
 			return this.then(undefined, (reason: any) => {
 				let match = false;
 				if (typeof predicate === "function") {
@@ -523,7 +523,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *         `handler`'s error if it threw one or returned a rejection.
 	 */
 	public finally(handler: (result: Promise<T>) => void|Thenable<void>): Promise<T> {
-		let runner = () => handler(this);
+		const runner = () => handler(this);
 		return this.then(runner, runner).return(this);
 	}
 
@@ -616,7 +616,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @return A human-readable representation of the promise and its status.
 	 */
 	public toString(): string {
-		var state: string;
+		let state: string;
 		switch (this._state) {
 			case State.Pending: state = "pending"; break;
 			case State.Fulfilled: state = "fulfilled"; break;
@@ -725,7 +725,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @return Promise resolved to `value`
 	 */
 	public static resolve<R>(value?: R|Thenable<R>): Promise<void|R> {
-		var p = new Promise(internalResolver);
+		const p = new Promise(internalResolver);
 		p._resolve(value);
 		return p;
 	}
@@ -757,7 +757,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @return Promise resolved to rejection `reason`
 	 */
 	public static reject<T>(reason: Error): Promise<T> {
-		var p = new Promise(internalResolver);
+		const p = new Promise(internalResolver);
 		p._reject(reason);
 		return p;
 	}
@@ -779,13 +779,13 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 				resolve([]);
 				return;
 			}
-			var result = new Array(thenables.length);
-			var remaining = thenables.length;
-			for (var i = 0; i < thenables.length; i++) {
+			const result = new Array(thenables.length);
+			let remaining = thenables.length;
+			for (let i = 0; i < thenables.length; i++) {
 				follow(thenables[i], i);
 			}
 			function follow(t: X|Thenable<X>, index: number): void {
-				var slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
+				const slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
 				slave.done(
 					(v: X): void => {
 						result[index] = v;
@@ -812,7 +812,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		return new Promise<X>((resolve, reject): void => {
 			assert(Array.isArray(thenables), "thenables must be an Array");
 			for (const t of thenables) {
-				let slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
+				const slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
 				Promise.resolve(slave).done(resolve, reject);
 			}
 		});
@@ -860,9 +860,9 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *         resolve/reject functions
 	 */
 	public static defer<X>(): Deferred<any> {
-		var resolve: (v: any) => void;
-		var reject: (r: Error) => void;
-		var p = new Promise<any>((res, rej): void => {
+		let resolve: (v: any) => void;
+		let reject: (r: Error) => void;
+		const p = new Promise<any>((res, rej): void => {
 			resolve = res;
 			reject = rej;
 		});
@@ -909,7 +909,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	public static delay<R>(...args: any[]): Promise<void|R> {
 		if (arguments[1] === undefined) {
 			// delay(ms)
-			let ms = arguments[0];
+			const ms = arguments[0];
 			return new Promise<void>((resolve) => {
 				setTimeout(resolve, ms);
 			});
@@ -1122,7 +1122,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		// 2.3.3: Otherwise, if `x` is an object or function,
 		if (typeof x === "object" || typeof x === "function") {
 			// 2.3.3.1: Let `then` be `x.then`
-			var then: GetThenError|Thenable<T>["then"] = this._tryGetThen(x);
+			const then: GetThenError|Thenable<T>["then"] = this._tryGetThen(x);
 			// 2.3.3.2: If retrieving the property `x.then` results in a thrown
 			// exception `e`, reject `promise` with `e` as the reason.
 			if (then === getThenError) {
@@ -1144,7 +1144,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private _tryGetThen(x: T|Thenable<T>): GetThenError|Thenable<T>["then"] {
 		try {
 			// 2.3.3.1: Let `then` be `x.then`
-			var then = (<any>x).then;
+			const then = (<any>x).then;
 			return then;
 		} catch (e) {
 			// 2.3.3.2: If retrieving the property `x.then` results in a thrown
@@ -1178,7 +1178,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		if (this._trace && this._result instanceof Error && !(<any>this._result).trace) {
 			(<any>this._result).trace = this._trace;
 			// TODO: Meh, this always accesses '.stack', which is supposed to be expensive
-			var originalStack = this._result.stack;
+			const originalStack = this._result.stack;
 			// Stack may be undefined if e.g. a Stack Overflow occurred
 			if (originalStack) {
 				Object.defineProperty(this._result, "stack", {
@@ -1229,7 +1229,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		assert(this._state === State.Pending);
 
 		trace && trace(this, "_follow([Thenable])");
-		var called = false;
+		let called = false;
 		try {
 			// 2.3.3.3: If `then` is a function, call it with `x` as `this`,
 			//          first argument `resolvePromise`, and second argument `rejectPromise`
@@ -1277,7 +1277,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		slave: Promise<any>,
 		done: Trace
 	): void {
-		var h: Handler<T, any> = {
+		const h: Handler<T, any> = {
 			promise: this,
 			onFulfilled, // tslint:disable-line:object-literal-sort-keys
 			onRejected,
@@ -1290,7 +1290,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			if (!this._handlers) {
 				this._handlers = [h];
 			} else {
-				var i = this._handlers.length;
+				const i = this._handlers.length;
 				this._handlers[i] = h;
 			}
 		}
@@ -1307,9 +1307,9 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		if (!this._handlers) {
 			return;
 		}
-		var i = 0;
-		var h = this._handlers;
-		var l = h.length;
+		let i = 0;
+		const h = this._handlers;
+		const l = h.length;
 		this._handlers = undefined;
 		while (i < l) {
 			// Note: we enqueue every single callback/follower separately,
@@ -1327,7 +1327,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @param handler The handler being processed
 	 */
 	private _unwrap(handler: Handler<T, any>): void {
-		var callback: (x: any) => any = this._state === State.Fulfilled ? handler.onFulfilled : handler.onRejected;
+		const callback: (x: any) => any = this._state === State.Fulfilled ? handler.onFulfilled : handler.onRejected;
 		if (handler.done) {
 			// Unwrap .done() callbacks
 			trace && trace(this, `_unwrap()`);
@@ -1342,10 +1342,10 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 			assert(!unwrappingPromise);
 			unwrappingPromise = this;
 			try {
-				var result = callback(this._result);
+				const result = callback(this._result);
 				if (result) { // skips the common cases like `undefined`
 					// May be a thenable, need to start following it...
-					var p = (result instanceof Promise) ? result : Promise.resolve(result);
+					const p = (result instanceof Promise) ? result : Promise.resolve(result);
 					p.done(); // Ensure it throws as soon as it's rejected
 				}
 				unwrappingPromise = undefined;
@@ -1371,7 +1371,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		//    resolved when we do (i.e. its fate is determined by us)
 		//    -> callbacks will both be undefined, slave is that other promise
 		//       that wants to be resolved with our result
-		let slave = handler.slave;
+		const slave = handler.slave;
 		trace && trace(this, `_unwrap(${slave._id})`);
 		if (typeof callback === "function") {
 			// Case 1

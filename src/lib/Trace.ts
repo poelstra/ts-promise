@@ -47,9 +47,9 @@ export default class Trace {
 	}
 
 	public inspect(): string {
-		var result = this.stack.inspect();
+		let result = this.stack.inspect();
 		if (this.sources) {
-			for (var i = this.sources.length - 1; i >= 0; i--) {
+			for (let i = this.sources.length - 1; i >= 0; i--) {
 				result += "\n  from previous:\n" + this.sources[i].inspect();
 			}
 		}

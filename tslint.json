@@ -38,8 +38,6 @@
       false
     ],
 
-    "member-ordering": false,
-    "no-var-keyword": false,
-    "prefer-const": false
+    "member-ordering": false
   }
 }

@@ -35,7 +35,7 @@ describe("utils", () => {
 		describe("other environments", () => {
 			// Backup and restore the global state things we're going to patch in
 			// these tests
-			let restore: any = {};
+			const restore: any = {};
 			let nodeGlobal: any;
 			const keys = ["self", "global", "window", "Function"];
 			beforeEach(() => {

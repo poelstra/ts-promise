@@ -20,8 +20,8 @@ describe("async", () => {
 	});
 
 	it("uses alternate scheduler efficiently", (done: MochaDone) => {
-		var called = 0;
-		var flusher: () => void;
+		let called = 0;
+		let flusher: () => void;
 		async.setScheduler((f: () => void) => {
 			called++;
 			flusher = f;
@@ -49,8 +49,8 @@ describe("async", () => {
 	});
 
 	it("can reset scheduler to default, using null", (done: MochaDone) => {
-		var called = 0;
-		var flusher: () => void;
+		let called = 0;
+		let flusher: () => void;
 		async.setScheduler((f: () => void) => {
 			called++;
 			flusher = f;
@@ -68,8 +68,8 @@ describe("async", () => {
 	});
 
 	it("can reset scheduler to default, using undefined", (done: MochaDone) => {
-		var called = 0;
-		var flusher: () => void;
+		let called = 0;
+		let flusher: () => void;
 		async.setScheduler((f: () => void) => {
 			called++;
 			flusher = f;
@@ -118,8 +118,8 @@ describe("async", () => {
 	});
 
 	it("allows async method to crash using automatic flush, then still runs others", (done: MochaDone) => {
-		var flusher: () => void;
-		var called = 0;
+		let flusher: () => void;
+		let called = 0;
 		async.setScheduler((f: () => void) => {
 			called++;
 			flusher = f;
@@ -149,12 +149,12 @@ describe("async", () => {
 	});
 
 	it("allows overriding default scheduler by timer-stubbing libs (Sinon)", () => {
-		var tasks: Array<(...args: any[]) => void> = [];
-		var oldSetImmediate = global.setImmediate;
+		const tasks: Array<(...args: any[]) => void> = [];
+		const oldSetImmediate = global.setImmediate;
 		global.setImmediate = (cb: (...args: any[]) => void, ...args: any[]): any => {
 			tasks.push(cb);
 		};
-		var called = false;
+		let called = false;
 		function test(): void { called = true; }
 		async.enqueue(test, undefined);
 		expect(called).to.equal(false);
