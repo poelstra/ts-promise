@@ -38,6 +38,9 @@
       false
     ],
 
-    "member-ordering": false
+    "member-ordering": [
+      true,
+      { "order": ["instance-field", "static-field", "instance-method", "static-method"] }
+    ]
   }
 }

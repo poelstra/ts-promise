@@ -701,385 +701,6 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		return this.then(() => Promise.reject<T>(reason));
 	}
 
-	/**
-	 * Create an immediately resolved promise (in case of a 'normal' value), or
-	 * a promise that 'follows' another `Thenable` (e.g. a Promise from another
-	 * library).
-	 *
-	 * @param value Value (or Thenable for value) for returned promise
-	 * @return Promise resolved to `value`
-	 */
-	public static resolve<R>(value: R|Thenable<R>): Promise<R>;
-	/**
-	 * Create an immediately resolved void-promise.
-	 *
-	 * @return Promise resolved to void (i.e. `undefined`)
-	 */
-	public static resolve(): Promise<void>;
-	/**
-	 * Create an immediately resolved promise (in case of a 'normal' value), or
-	 * a promise that 'follows' another `Thenable` (e.g. a Promise from another
-	 * library).
-	 *
-	 * @param value Value (or Thenable for value) for returned promise
-	 * @return Promise resolved to `value`
-	 */
-	public static resolve<R>(value?: R|Thenable<R>): Promise<void|R> {
-		const p = new Promise(internalResolver);
-		p._resolve(value);
-		return p;
-	}
-
-	/**
-	 * Create an immediately rejected void-promise.
-	 *
-	 * Note: to create a rejected promise of another type, use e.g.
-	 * `Promise.reject<number>(myError)`
-	 *
-	 * @param reason Error object to set rejection reason
-	 * @return Void promise resolved to rejection `reason`
-	 */
-	public static reject(reason: Error): Promise<void>;
-	/**
-	 * Create an immediately rejected promise.
-	 *
-	 * @param reason Error object to set rejection reason
-	 * @return Promise resolved to rejection `reason`
-	 */
-	public static reject<T>(reason: Error): Promise<T>;
-	/**
-	 * Create an immediately rejected promise.
-	 *
-	 * Note: to create a rejected promise of a certain type, use e.g.
-	 * `Promise.reject<number>(myError)`
-	 *
-	 * @param reason Error object to set rejection reason
-	 * @return Promise resolved to rejection `reason`
-	 */
-	public static reject<T>(reason: Error): Promise<T> {
-		const p = new Promise(internalResolver);
-		p._reject(reason);
-		return p;
-	}
-
-	/**
-	 * Return a promise for an array of all resolved input promises (or values).
-	 * If any of the input promises is rejected, the returned promise is
-	 * rejected with that reason.
-	 * When passing an empty array, the promises is immediately resolved to an
-	 * empty array.
-	 *
-	 * @param thenables Array of values or promises for them
-	 * @return promise that resolves with array of all resolved values
-	 */
-	public static all<X>(thenables: Array<X|Thenable<X>>): Promise<X[]> {
-		return new Promise<X[]>((resolve, reject): void => {
-			assert(Array.isArray(thenables), "thenables must be an Array");
-			if (thenables.length === 0) {
-				resolve([]);
-				return;
-			}
-			const result = new Array(thenables.length);
-			let remaining = thenables.length;
-			for (let i = 0; i < thenables.length; i++) {
-				follow(thenables[i], i);
-			}
-			function follow(t: X|Thenable<X>, index: number): void {
-				const slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
-				slave.done(
-					(v: X): void => {
-						result[index] = v;
-						remaining--;
-						if (remaining === 0) {
-							resolve(result);
-						}
-					},
-					(reason: any): void => reject(reason)
-				);
-			}
-		});
-	}
-
-	/**
-	 * Return a promise that resolves to the fulfillment or rejection of the
-	 * first input promise that resolves.
-	 * When passing an empty array, the promise will never resolve.
-	 *
-	 * @param thenables Array of values or promises for them
-	 * @return promise that resolves to first resolved input promise
-	 */
-	public static race<X>(thenables: Array<X|Thenable<X>>): Promise<X> {
-		return new Promise<X>((resolve, reject): void => {
-			assert(Array.isArray(thenables), "thenables must be an Array");
-			for (const t of thenables) {
-				const slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
-				Promise.resolve(slave).done(resolve, reject);
-			}
-		});
-	}
-
-	/**
-	 * Create tuple of a promise and its resolve and reject functions.
-	 *
-	 * It is generally better (and slightly faster) to use the Promise
-	 * constructor to create a promise, as that will also catch any exception
-	 * thrown while running the resolver.
-	 *
-	 * A Deferred can be useful in some scenarios though, e.g. when working with
-	 * timers, protocol request/response pairs, etc.
-	 *
-	 * @return Deferred object, containing unresolved promise and its
-	 *         resolve/reject functions
-	 */
-	public static defer(): VoidDeferred;
-	/**
-	 * Create tuple of a promise and its resolve and reject functions.
-	 *
-	 * It is generally better (and slightly faster) to use the Promise
-	 * constructor to create a promise, as that will also catch any exception
-	 * thrown while running the resolver.
-	 *
-	 * A Deferred can be useful in some scenarios though, e.g. when working with
-	 * timers, protocol request/response pairs, etc.
-	 *
-	 * @return Deferred object, containing unresolved promise and its
-	 *         resolve/reject functions
-	 */
-	public static defer<X>(): Deferred<X>;
-	/**
-	 * Create tuple of a promise and its resolve and reject functions.
-	 *
-	 * It is generally better (and slightly faster) to use the Promise
-	 * constructor to create a promise, as that will also catch any exception
-	 * thrown while running the resolver.
-	 *
-	 * A Deferred can be useful in some scenarios though, e.g. when working with
-	 * timers, protocol request/response pairs, etc.
-	 *
-	 * @return Deferred object, containing unresolved promise and its
-	 *         resolve/reject functions
-	 */
-	public static defer<X>(): Deferred<any> {
-		let resolve: (v: any) => void;
-		let reject: (r: Error) => void;
-		const p = new Promise<any>((res, rej): void => {
-			resolve = res;
-			reject = rej;
-		});
-		return {
-			promise: p,
-			reject,
-			resolve,
-		};
-	}
-
-	/**
-	 * Create a promise that resolves to a void value (`undefined`) after `ms`
-	 * milliseconds.
-	 *
-	 * @param ms Number of milliseconds to wait before resolving
-	 * @return Promise that fulfills with a void value after `ms` milliseconds
-	 */
-	public static delay(ms: number): Promise<void>;
-	/**
-	 * Create a promise that resolves to the given value (or promise for a
-	 * value) after `ms` milliseconds. The timer will start when the given value
-	 * is resolved.
-	 * If the input value is a rejected promise, the resulting promise is also
-	 * rejected, without waiting for the timer.
-	 *
-	 * @param value Value or promise for value to be delayed
-	 * @param ms Number of milliseconds to wait before resolving
-	 * @return Promise that fulfills `ms` milliseconds after given (promise for)
-	 *         value is fulfilled
-	 */
-	public static delay<R>(value: R|Thenable<R>, ms: number): Promise<R>;
-	/**
-	 * Create a promise that resolves to the given value (or promise for a
-	 * value) after `ms` milliseconds. The timer will start when the given value
-	 * is resolved.
-	 * If the input value is a rejected promise, the resulting promise is also
-	 * rejected, without waiting for the timer.
-	 *
-	 * @param value Value or promise for value to be delayed
-	 * @param ms Number of milliseconds to wait before resolving
-	 * @return Promise that fulfills `ms` milliseconds after given (promise for)
-	 *         value is fulfilled
-	 */
-	public static delay<R>(...args: any[]): Promise<void|R> {
-		if (arguments[1] === undefined) {
-			// delay(ms)
-			const ms = arguments[0];
-			return new Promise<void>((resolve) => {
-				setTimeout(resolve, ms);
-			});
-		}
-		// delay(value, ms)
-		return Promise.resolve(arguments[0]).delay(arguments[1]);
-	}
-
-	/**
-	 * Register a callback to be called whenever a rejected Promise reaches a `.done()` call
-	 * without `rejectHandler` argument, or either of the `.done()` callbacks itself
-	 * throws/rejects.
-	 *
-	 * This is similar to Node's `unhandledException` event, in that it is guaranteed to be
-	 * an error, because the programmer explicitly marked the chain with `.done()`.
-	 *
-	 * Node also has an `unhandledRejection` event, which is actually closer to ts-promise's
-	 * `onPossiblyUnhandledRejection` handler.
-	 *
-	 * The default handler will throw an `UnhandledRejection` error, which contains the
-	 * original reason of the rejection.
-	 * In Node, if you don't have an `unhandledException` event handler, that will cause your
-	 * program to terminate after printing the error.
-	 * When overriding the default handler, it is recommended to keep a similar behavior,
-	 * as your program is likely in an unknown state.
-	 *
-	 * @see onPossiblyUnhandledRejection
-	 *
-	 * @param handler Callback called with the rejection reason (typically an `Error`), and a
-	 *                `Trace` to the `.done()` call that terminated the chain. Call e.g.
-	 *                `trace.inspect()` to get the full trace.
-	 *                If `true` is given, the default handler is installed.
-	 *                If `false` is given, a no-op handler is installed.
-	 */
-	public static onUnhandledRejection(handler: boolean | UnhandledRejectionHandler): void {
-		if (handler === true) {
-			Promise._onUnhandledRejectionHandler = defaultUnhandledRejectionHandler;
-		} else if (handler === false) {
-			Promise._onUnhandledRejectionHandler = noop;
-		} else if (typeof handler !== "function") {
-			throw new TypeError("invalid handler: boolean or function expected");
-		} else {
-			Promise._onUnhandledRejectionHandler = handler;
-		}
-	}
-
-	/**
-	 * Register a callback to be called whenever a rejected Promise is not handled
-	 * by any `.catch()` (or second argument to `.then()`) at the end of one turn of the
-	 * event loop.
-	 *
-	 * Note that such a rejected promise may be handled later (by e.g. calling `.catch(() => {})`
-	 * on it). In that case, a subsequent call to an `onPossiblyUnhandledRejectionHandled` callback
-	 * will be made.
-	 *
-	 * This mechanism is equivalent to Node's `unhandledRejection` event.
-	 *
-	 * The default handler will:
-	 * - emit Node's `unhandledRejection` event if present, or
-	 * - emit an `unhandledrejection` (note small R) `PromiseRejectionEvent` on `window` or `self` if present, or
-	 * - log the rejection using `console.warn()`.
-	 *
-	 * Note: when attaching an `unhandledrejection` handler in the browser, make sure to
-	 * call `event.preventDefault()` to prevent ts-promise's default fallback logging.
-	 *
-	 * @see onUnhandledRejection
-	 * @see onPossiblyUnhandledRejectionHandled
-	 *
-	 * @param handler Callback called with the (so-far) unhandled rejected promise.
-	 *                If `true` is given, the default handler is installed.
-	 *                If `false` is given, a no-op handler is installed.
-	 */
-	public static onPossiblyUnhandledRejection(handler: boolean | PossiblyUnhandledRejectionHandler): void {
-		if (handler === true) {
-			Promise._onPossiblyUnhandledRejectionHandler = defaultPossiblyUnhandledRejectionHandler;
-		} else if (handler === false) {
-			Promise._onPossiblyUnhandledRejectionHandler = noop;
-		} else if (typeof handler !== "function") {
-			throw new TypeError("invalid handler: boolean or function expected");
-		} else {
-			Promise._onPossiblyUnhandledRejectionHandler = handler;
-		}
-	}
-
-	/**
-	 * Register a callback to be called whenever a rejected promise previously reported as
-	 * 'possibly unhandled', now becomes handled.
-	 *
-	 * This mechanism is equivalent to Node's `rejectionHandled` event.
-	 *
-	 * The default handler will emit Node's `rejectionHandled` event if present, or emit a
-	 * `rejectionhandled` (note small R) event on `window` (or `self`) if present.
-	 *
-	 * @see onPossiblyUnhandledRejection
-	 *
-	 * @param handler Callback called with a rejected promise that was previously reported as
-	 *                'possibly unhandled'.
-	 *                If `true` is given, the default handler is installed.
-	 *                If `false` is given, a no-op handler is installed.
-	 */
-	public static onPossiblyUnhandledRejectionHandled(handler: boolean | PossiblyUnhandledRejectionHandledHandler): void {
-		if (handler === true) {
-			Promise._onPossiblyUnhandledRejectionHandledHandler = defaultPossiblyUnhandledRejectionHandledHandler;
-		} else if (handler === false) {
-			Promise._onPossiblyUnhandledRejectionHandledHandler = noop;
-		} else if (typeof handler !== "function") {
-			throw new TypeError("invalid handler: boolean or function expected");
-		} else {
-			Promise._onPossiblyUnhandledRejectionHandledHandler = handler;
-		}
-	}
-
-	/**
-	 * Enable or disable long stack trace tracking on promises.
-	 *
-	 * This allows tracing a promise chain through the various asynchronous
-	 * actions in a program. For example, when a promise is rejected, the last
-	 * few locations of any preceding promises are included in the error's stack
-	 * trace.
-	 *
-	 * Note: it is possible to enable/disable long tracing at runtime.
-	 *
-	 * When chaining off of a promise that was created while tracing was enabled
-	 * (e.g. through `.then()`), all children will also have long traces, even
-	 * when tracing is turned off. This allows to trace just some promise paths.
-	 *
-	 * Tracing is disabled by default as it incurs a memory and performance
-	 * overhead, although it's still faster with tracing than some major
-	 * promise libraries without tracing, so don't worry too much about it.
-	 *
-	 * @param enable Set to true to enable long traces, false to disable
-	 */
-	public static setLongTraces(enable: boolean): void {
-		longTraces = enable;
-	}
-
-	/**
-	 * Set trace function that is called for internal state changes of a
-	 * promise.
-	 * Call with `undefined` or `null` to disable such tracing (this is the
-	 * default).
-	 *
-	 * @param tracer Callback called for various stages during lifetime of a promise
-	 */
-	// tslint:disable-next-line:no-null-keyword
-	public static setTracer(tracer: undefined | null | ((promise: Promise<any>, msg: string) => void)): void {
-		if (typeof tracer === "function") {
-			trace = tracer;
-		} else {
-			trace = undefined;
-		}
-	}
-
-	/**
-	 * Recursively flush the async callback queue until all `.then()` and
-	 * `.done()` callbacks for fulfilled and rejected Promises have been called.
-	 * Useful in e.g. unit tests to advance program state to the next 'tick'.
-	 *
-	 * Note that if e.g. `.done()` encounters a rejected promise, `flush()` will
-	 * immediately throw an error (e.g. `UnhandledRejectionError`).
-	 * It is safe to call `flush()` again afterwards, but it will also be called
-	 * automatically by the async queue on the next 'real' tick.
-	 *
-	 * It is an error to call `flush()` while it is already running (e.g. from
-	 * a `.then()` callback).
-	 */
-	public static flush(): void {
-		async.flush();
-	}
-
 	private _setSource(source: Promise<any>): void {
 		if (!this._trace || !source._trace) {
 			return;
@@ -1392,6 +1013,385 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 				slave._reject(this._result);
 			}
 		}
+	}
+
+	/**
+	 * Create an immediately resolved promise (in case of a 'normal' value), or
+	 * a promise that 'follows' another `Thenable` (e.g. a Promise from another
+	 * library).
+	 *
+	 * @param value Value (or Thenable for value) for returned promise
+	 * @return Promise resolved to `value`
+	 */
+	public static resolve<R>(value: R | Thenable<R>): Promise<R>;
+	/**
+	 * Create an immediately resolved void-promise.
+	 *
+	 * @return Promise resolved to void (i.e. `undefined`)
+	 */
+	public static resolve(): Promise<void>;
+	/**
+	 * Create an immediately resolved promise (in case of a 'normal' value), or
+	 * a promise that 'follows' another `Thenable` (e.g. a Promise from another
+	 * library).
+	 *
+	 * @param value Value (or Thenable for value) for returned promise
+	 * @return Promise resolved to `value`
+	 */
+	public static resolve<R>(value?: R | Thenable<R>): Promise<void | R> {
+		const p = new Promise(internalResolver);
+		p._resolve(value);
+		return p;
+	}
+
+	/**
+	 * Create an immediately rejected void-promise.
+	 *
+	 * Note: to create a rejected promise of another type, use e.g.
+	 * `Promise.reject<number>(myError)`
+	 *
+	 * @param reason Error object to set rejection reason
+	 * @return Void promise resolved to rejection `reason`
+	 */
+	public static reject(reason: Error): Promise<void>;
+	/**
+	 * Create an immediately rejected promise.
+	 *
+	 * @param reason Error object to set rejection reason
+	 * @return Promise resolved to rejection `reason`
+	 */
+	public static reject<T>(reason: Error): Promise<T>;
+	/**
+	 * Create an immediately rejected promise.
+	 *
+	 * Note: to create a rejected promise of a certain type, use e.g.
+	 * `Promise.reject<number>(myError)`
+	 *
+	 * @param reason Error object to set rejection reason
+	 * @return Promise resolved to rejection `reason`
+	 */
+	public static reject<T>(reason: Error): Promise<T> {
+		const p = new Promise(internalResolver);
+		p._reject(reason);
+		return p;
+	}
+
+	/**
+	 * Return a promise for an array of all resolved input promises (or values).
+	 * If any of the input promises is rejected, the returned promise is
+	 * rejected with that reason.
+	 * When passing an empty array, the promises is immediately resolved to an
+	 * empty array.
+	 *
+	 * @param thenables Array of values or promises for them
+	 * @return promise that resolves with array of all resolved values
+	 */
+	public static all<X>(thenables: Array<X | Thenable<X>>): Promise<X[]> {
+		return new Promise<X[]>((resolve, reject): void => {
+			assert(Array.isArray(thenables), "thenables must be an Array");
+			if (thenables.length === 0) {
+				resolve([]);
+				return;
+			}
+			const result = new Array(thenables.length);
+			let remaining = thenables.length;
+			for (let i = 0; i < thenables.length; i++) {
+				follow(thenables[i], i);
+			}
+			function follow(t: X | Thenable<X>, index: number): void {
+				const slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
+				slave.done(
+					(v: X): void => {
+						result[index] = v;
+						remaining--;
+						if (remaining === 0) {
+							resolve(result);
+						}
+					},
+					(reason: any): void => reject(reason)
+				);
+			}
+		});
+	}
+
+	/**
+	 * Return a promise that resolves to the fulfillment or rejection of the
+	 * first input promise that resolves.
+	 * When passing an empty array, the promise will never resolve.
+	 *
+	 * @param thenables Array of values or promises for them
+	 * @return promise that resolves to first resolved input promise
+	 */
+	public static race<X>(thenables: Array<X | Thenable<X>>): Promise<X> {
+		return new Promise<X>((resolve, reject): void => {
+			assert(Array.isArray(thenables), "thenables must be an Array");
+			for (const t of thenables) {
+				const slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
+				Promise.resolve(slave).done(resolve, reject);
+			}
+		});
+	}
+
+	/**
+	 * Create tuple of a promise and its resolve and reject functions.
+	 *
+	 * It is generally better (and slightly faster) to use the Promise
+	 * constructor to create a promise, as that will also catch any exception
+	 * thrown while running the resolver.
+	 *
+	 * A Deferred can be useful in some scenarios though, e.g. when working with
+	 * timers, protocol request/response pairs, etc.
+	 *
+	 * @return Deferred object, containing unresolved promise and its
+	 *         resolve/reject functions
+	 */
+	public static defer(): VoidDeferred;
+	/**
+	 * Create tuple of a promise and its resolve and reject functions.
+	 *
+	 * It is generally better (and slightly faster) to use the Promise
+	 * constructor to create a promise, as that will also catch any exception
+	 * thrown while running the resolver.
+	 *
+	 * A Deferred can be useful in some scenarios though, e.g. when working with
+	 * timers, protocol request/response pairs, etc.
+	 *
+	 * @return Deferred object, containing unresolved promise and its
+	 *         resolve/reject functions
+	 */
+	public static defer<X>(): Deferred<X>;
+	/**
+	 * Create tuple of a promise and its resolve and reject functions.
+	 *
+	 * It is generally better (and slightly faster) to use the Promise
+	 * constructor to create a promise, as that will also catch any exception
+	 * thrown while running the resolver.
+	 *
+	 * A Deferred can be useful in some scenarios though, e.g. when working with
+	 * timers, protocol request/response pairs, etc.
+	 *
+	 * @return Deferred object, containing unresolved promise and its
+	 *         resolve/reject functions
+	 */
+	public static defer<X>(): Deferred<any> {
+		let resolve: (v: any) => void;
+		let reject: (r: Error) => void;
+		const p = new Promise<any>((res, rej): void => {
+			resolve = res;
+			reject = rej;
+		});
+		return {
+			promise: p,
+			reject,
+			resolve,
+		};
+	}
+
+	/**
+	 * Create a promise that resolves to a void value (`undefined`) after `ms`
+	 * milliseconds.
+	 *
+	 * @param ms Number of milliseconds to wait before resolving
+	 * @return Promise that fulfills with a void value after `ms` milliseconds
+	 */
+	public static delay(ms: number): Promise<void>;
+	/**
+	 * Create a promise that resolves to the given value (or promise for a
+	 * value) after `ms` milliseconds. The timer will start when the given value
+	 * is resolved.
+	 * If the input value is a rejected promise, the resulting promise is also
+	 * rejected, without waiting for the timer.
+	 *
+	 * @param value Value or promise for value to be delayed
+	 * @param ms Number of milliseconds to wait before resolving
+	 * @return Promise that fulfills `ms` milliseconds after given (promise for)
+	 *         value is fulfilled
+	 */
+	public static delay<R>(value: R | Thenable<R>, ms: number): Promise<R>;
+	/**
+	 * Create a promise that resolves to the given value (or promise for a
+	 * value) after `ms` milliseconds. The timer will start when the given value
+	 * is resolved.
+	 * If the input value is a rejected promise, the resulting promise is also
+	 * rejected, without waiting for the timer.
+	 *
+	 * @param value Value or promise for value to be delayed
+	 * @param ms Number of milliseconds to wait before resolving
+	 * @return Promise that fulfills `ms` milliseconds after given (promise for)
+	 *         value is fulfilled
+	 */
+	public static delay<R>(...args: any[]): Promise<void | R> {
+		if (arguments[1] === undefined) {
+			// delay(ms)
+			const ms = arguments[0];
+			return new Promise<void>((resolve) => {
+				setTimeout(resolve, ms);
+			});
+		}
+		// delay(value, ms)
+		return Promise.resolve(arguments[0]).delay(arguments[1]);
+	}
+
+	/**
+	 * Register a callback to be called whenever a rejected Promise reaches a `.done()` call
+	 * without `rejectHandler` argument, or either of the `.done()` callbacks itself
+	 * throws/rejects.
+	 *
+	 * This is similar to Node's `unhandledException` event, in that it is guaranteed to be
+	 * an error, because the programmer explicitly marked the chain with `.done()`.
+	 *
+	 * Node also has an `unhandledRejection` event, which is actually closer to ts-promise's
+	 * `onPossiblyUnhandledRejection` handler.
+	 *
+	 * The default handler will throw an `UnhandledRejection` error, which contains the
+	 * original reason of the rejection.
+	 * In Node, if you don't have an `unhandledException` event handler, that will cause your
+	 * program to terminate after printing the error.
+	 * When overriding the default handler, it is recommended to keep a similar behavior,
+	 * as your program is likely in an unknown state.
+	 *
+	 * @see onPossiblyUnhandledRejection
+	 *
+	 * @param handler Callback called with the rejection reason (typically an `Error`), and a
+	 *                `Trace` to the `.done()` call that terminated the chain. Call e.g.
+	 *                `trace.inspect()` to get the full trace.
+	 *                If `true` is given, the default handler is installed.
+	 *                If `false` is given, a no-op handler is installed.
+	 */
+	public static onUnhandledRejection(handler: boolean | UnhandledRejectionHandler): void {
+		if (handler === true) {
+			Promise._onUnhandledRejectionHandler = defaultUnhandledRejectionHandler;
+		} else if (handler === false) {
+			Promise._onUnhandledRejectionHandler = noop;
+		} else if (typeof handler !== "function") {
+			throw new TypeError("invalid handler: boolean or function expected");
+		} else {
+			Promise._onUnhandledRejectionHandler = handler;
+		}
+	}
+
+	/**
+	 * Register a callback to be called whenever a rejected Promise is not handled
+	 * by any `.catch()` (or second argument to `.then()`) at the end of one turn of the
+	 * event loop.
+	 *
+	 * Note that such a rejected promise may be handled later (by e.g. calling `.catch(() => {})`
+	 * on it). In that case, a subsequent call to an `onPossiblyUnhandledRejectionHandled` callback
+	 * will be made.
+	 *
+	 * This mechanism is equivalent to Node's `unhandledRejection` event.
+	 *
+	 * The default handler will:
+	 * - emit Node's `unhandledRejection` event if present, or
+	 * - emit an `unhandledrejection` (note small R) `PromiseRejectionEvent` on `window` or `self` if present, or
+	 * - log the rejection using `console.warn()`.
+	 *
+	 * Note: when attaching an `unhandledrejection` handler in the browser, make sure to
+	 * call `event.preventDefault()` to prevent ts-promise's default fallback logging.
+	 *
+	 * @see onUnhandledRejection
+	 * @see onPossiblyUnhandledRejectionHandled
+	 *
+	 * @param handler Callback called with the (so-far) unhandled rejected promise.
+	 *                If `true` is given, the default handler is installed.
+	 *                If `false` is given, a no-op handler is installed.
+	 */
+	public static onPossiblyUnhandledRejection(handler: boolean | PossiblyUnhandledRejectionHandler): void {
+		if (handler === true) {
+			Promise._onPossiblyUnhandledRejectionHandler = defaultPossiblyUnhandledRejectionHandler;
+		} else if (handler === false) {
+			Promise._onPossiblyUnhandledRejectionHandler = noop;
+		} else if (typeof handler !== "function") {
+			throw new TypeError("invalid handler: boolean or function expected");
+		} else {
+			Promise._onPossiblyUnhandledRejectionHandler = handler;
+		}
+	}
+
+	/**
+	 * Register a callback to be called whenever a rejected promise previously reported as
+	 * 'possibly unhandled', now becomes handled.
+	 *
+	 * This mechanism is equivalent to Node's `rejectionHandled` event.
+	 *
+	 * The default handler will emit Node's `rejectionHandled` event if present, or emit a
+	 * `rejectionhandled` (note small R) event on `window` (or `self`) if present.
+	 *
+	 * @see onPossiblyUnhandledRejection
+	 *
+	 * @param handler Callback called with a rejected promise that was previously reported as
+	 *                'possibly unhandled'.
+	 *                If `true` is given, the default handler is installed.
+	 *                If `false` is given, a no-op handler is installed.
+	 */
+	public static onPossiblyUnhandledRejectionHandled(handler: boolean | PossiblyUnhandledRejectionHandledHandler): void {
+		if (handler === true) {
+			Promise._onPossiblyUnhandledRejectionHandledHandler = defaultPossiblyUnhandledRejectionHandledHandler;
+		} else if (handler === false) {
+			Promise._onPossiblyUnhandledRejectionHandledHandler = noop;
+		} else if (typeof handler !== "function") {
+			throw new TypeError("invalid handler: boolean or function expected");
+		} else {
+			Promise._onPossiblyUnhandledRejectionHandledHandler = handler;
+		}
+	}
+
+	/**
+	 * Enable or disable long stack trace tracking on promises.
+	 *
+	 * This allows tracing a promise chain through the various asynchronous
+	 * actions in a program. For example, when a promise is rejected, the last
+	 * few locations of any preceding promises are included in the error's stack
+	 * trace.
+	 *
+	 * Note: it is possible to enable/disable long tracing at runtime.
+	 *
+	 * When chaining off of a promise that was created while tracing was enabled
+	 * (e.g. through `.then()`), all children will also have long traces, even
+	 * when tracing is turned off. This allows to trace just some promise paths.
+	 *
+	 * Tracing is disabled by default as it incurs a memory and performance
+	 * overhead, although it's still faster with tracing than some major
+	 * promise libraries without tracing, so don't worry too much about it.
+	 *
+	 * @param enable Set to true to enable long traces, false to disable
+	 */
+	public static setLongTraces(enable: boolean): void {
+		longTraces = enable;
+	}
+
+	/**
+	 * Set trace function that is called for internal state changes of a
+	 * promise.
+	 * Call with `undefined` or `null` to disable such tracing (this is the
+	 * default).
+	 *
+	 * @param tracer Callback called for various stages during lifetime of a promise
+	 */
+	// tslint:disable-next-line:no-null-keyword
+	public static setTracer(tracer: undefined | null | ((promise: Promise<any>, msg: string) => void)): void {
+		if (typeof tracer === "function") {
+			trace = tracer;
+		} else {
+			trace = undefined;
+		}
+	}
+
+	/**
+	 * Recursively flush the async callback queue until all `.then()` and
+	 * `.done()` callbacks for fulfilled and rejected Promises have been called.
+	 * Useful in e.g. unit tests to advance program state to the next 'tick'.
+	 *
+	 * Note that if e.g. `.done()` encounters a rejected promise, `flush()` will
+	 * immediately throw an error (e.g. `UnhandledRejectionError`).
+	 * It is safe to call `flush()` again afterwards, but it will also be called
+	 * automatically by the async queue on the next 'real' tick.
+	 *
+	 * It is an error to call `flush()` while it is already running (e.g. from
+	 * a `.then()` callback).
+	 */
+	public static flush(): void {
+		async.flush();
 	}
 
 	/**
