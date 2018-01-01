@@ -14,7 +14,7 @@ sourceMapSupport.install({
 
 import { expect } from "chai";
 import BaseError from "../lib/BaseError";
-import { Promise, Thenable, Deferred, Trace, UnhandledRejection } from "../lib/index";
+import { Deferred, Promise, Thenable, Trace, UnhandledRejection } from "../lib/index";
 import EsPromise from "./espromise";
 
 let boomError = new Error("boom");
@@ -152,7 +152,7 @@ describe("Promise", (): void => {
 			Promise.all([d1.promise, d2.promise]).then((r) => results = r);
 			d1.resolve(d2.promise);
 			Promise.flush();
-			expect(results).to.be.undefined;
+			expect(results).to.equal(undefined);
 			d2.resolve(2);
 			Promise.flush();
 			expect(results).to.deep.equal([2, 2]);
@@ -162,7 +162,7 @@ describe("Promise", (): void => {
 			var d1 = Promise.defer<number>();
 			Promise.all([d1.promise, 2]).then((r) => results = r);
 			Promise.flush();
-			expect(results).to.be.undefined;
+			expect(results).to.equal(undefined);
 			d1.resolve(1);
 			Promise.flush();
 			expect(results).to.deep.equal([1, 2]);
@@ -172,11 +172,11 @@ describe("Promise", (): void => {
 			var callback: (n: number) => void;
 			// Create rather dirty Promise-mock
 			var thenable: Thenable<number> = {
-				then: (cb: Function): Thenable<any> => { callback = <any>cb; return null; },
+				then: (cb: (n: number) => void): Thenable<any> => { callback = cb; return null; },
 			};
 			Promise.all([thenable]).then((r) => results = r);
 			callback(42);
-			expect(results).to.be.undefined;
+			expect(results).to.equal(undefined);
 			Promise.flush();
 			expect(results).to.deep.equal([42]);
 		});
@@ -213,7 +213,7 @@ describe("Promise", (): void => {
 			Promise.race([d1.promise]).then((n) => result = n);
 			d1.resolve(d2.promise);
 			Promise.flush();
-			expect(result).to.be.undefined;
+			expect(result).to.equal(undefined);
 			d2.resolve(2);
 			Promise.flush();
 			expect(result).to.deep.equal(2);
@@ -230,11 +230,11 @@ describe("Promise", (): void => {
 			var callback: (n: number) => void;
 			// Create rather dirty Promise-mock
 			var thenable: Thenable<number> = {
-				then: (cb: Function): Thenable<any> => { callback = <any>cb; return null; },
+				then: (cb: (n: number) => void): Thenable<any> => { callback = cb; return null; },
 			};
 			Promise.race([thenable]).then((n) => result = n);
 			callback(42);
-			expect(result).to.be.undefined;
+			expect(result).to.equal(undefined);
 			Promise.flush();
 			expect(result).to.equal(42);
 		});
@@ -352,7 +352,7 @@ describe("Promise", (): void => {
 			d = Promise.defer<number>();
 		});
 		it("is initially pending", () => {
-			expect(d.promise.isPending()).to.be.true;
+			expect(d.promise.isPending()).to.equal(true);
 		});
 		it("it can be resolved once", () => {
 			d.resolve(42);
@@ -376,7 +376,7 @@ describe("Promise", (): void => {
 			d.resolve(1);
 			d.reject(new Error("bla"));
 			Promise.flush();
-			expect(d.promise.isPending()).to.be.true;
+			expect(d.promise.isPending()).to.equal(true);
 			d2.reject(e);
 			Promise.flush();
 			expect(d.promise.reason()).to.equal(e);
@@ -702,7 +702,7 @@ describe("Promise", (): void => {
 		});
 		it("is silent when its reject callback returns non-Error Thenable", (): void => {
 			var thenable: Thenable<void> = {
-				then: (cb: Function): Thenable<any> => { cb(); return null; },
+				then: (cb: (value?: void) => void): Thenable<any> => { cb(); return null; },
 			};
 			Promise.reject(new Error("boom")).done(null, (r) => thenable);
 			expect(() => Promise.flush()).to.not.throw();
@@ -714,9 +714,9 @@ describe("Promise", (): void => {
 				ready = true;
 			});
 			expect(() => Promise.flush()).to.throw(UnhandledRejection);
-			expect(ready).to.be.false;
+			expect(ready).to.equal(false);
 			Promise.flush();
-			expect(ready).to.be.true;
+			expect(ready).to.equal(true);
 		});
 		it("should immediately break on thrown error in error callback", (): void => {
 			var ready = false;
@@ -725,9 +725,9 @@ describe("Promise", (): void => {
 				ready = true;
 			});
 			expect(() => Promise.flush()).to.throw(UnhandledRejection);
-			expect(ready).to.be.false;
+			expect(ready).to.equal(false);
 			Promise.flush();
-			expect(ready).to.be.true;
+			expect(ready).to.equal(true);
 		});
 		it("should immediately break on returned rejection in callback", (): void => {
 			Promise.resolve().done((): Promise<void> => {
@@ -751,9 +751,9 @@ describe("Promise", (): void => {
 				ready = true;
 			});
 			expect(() => Promise.flush()).to.throw(UnhandledRejection);
-			expect(ready).to.be.false;
+			expect(ready).to.equal(false);
 			Promise.flush();
-			expect(ready).to.be.true;
+			expect(ready).to.equal(true);
 		});
 		it("should break on asynchronously rejected Promise", (): void => {
 			var d = Promise.defer();
@@ -1091,7 +1091,7 @@ describe("Promise", (): void => {
 
 		// Note: handlers are already put back to defaults in top-level afterEach
 
-		let nodeEvents: { reason: any, promise: Promise<any> }[];
+		let nodeEvents: Array<{ reason: any, promise: Promise<any> }>;
 		function nodeUnhandledRejectionHandler(reason: any, promise: Promise<any>): void {
 			nodeEvents.push({ reason, promise });
 		}
@@ -1104,7 +1104,7 @@ describe("Promise", (): void => {
 		});
 
 		it("supports custom handler", () => {
-			let results: Promise<any>[] = [];
+			let results: Array<Promise<any>> = [];
 			Promise.onPossiblyUnhandledRejection((promise: Promise<any>) => results.push(promise));
 			const p = Promise.reject(boomError);
 			Promise.flush();
@@ -1143,7 +1143,7 @@ describe("Promise", (): void => {
 
 		// Note: handlers are already put back to defaults in top-level afterEach
 
-		let nodeEvents: { promise: Promise<any> }[];
+		let nodeEvents: Array<{ promise: Promise<any> }>;
 		function nodeRejectionHandledHandler(promise: Promise<any>): void {
 			nodeEvents.push({ promise });
 		}
@@ -1157,7 +1157,7 @@ describe("Promise", (): void => {
 		});
 
 		it("supports custom handler", () => {
-			let results: Promise<any>[] = [];
+			let results: Array<Promise<any>> = [];
 			Promise.onPossiblyUnhandledRejectionHandled((promise: Promise<any>) => results.push(promise));
 			const p = Promise.reject(boomError);
 			Promise.flush();
@@ -1423,8 +1423,9 @@ describe("Promise", (): void => {
 			Promise.resolve(d.promise);
 			d.resolve(42);
 			Promise.resolve({
-				then: (callback: Function): void => {
+				then: (callback: (n: number) => void): Thenable<number> => {
 					callback(42);
+					return this;
 				},
 			});
 			Promise.flush();

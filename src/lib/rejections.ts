@@ -84,7 +84,11 @@ export class PossiblyUnhandledRejection extends BaseUnhandledRejection {
  * @param promise ts-promise instance
  * @return true when event was 'handled' (i.e. someone called preventDefault() on it), false otherwise
  */
-function emitRejectionEvent(type: "unhandledrejection" | "rejectionhandled", reason: any, promise: Promise<any>): boolean {
+function emitRejectionEvent(
+	type: "unhandledrejection" | "rejectionhandled",
+	reason: any,
+	promise: Promise<any>
+): boolean {
 	// Browsers do a native Promise.resolve() on the promise given in PromiseRejectEvent,
 	// which causes an unhandled rejection error due to that native promise not being handled,
 	// and prevents the user's unhandled rejection handler from accessing the actual
@@ -151,6 +155,7 @@ export function defaultPossiblyUnhandledRejectionHandler(promise: Promise<any>):
 	// Fallback to log to console
 	if (log) {
 		const possiblyUnhandledRejection = new PossiblyUnhandledRejection(promise);
+		// tslint:disable-next-line:no-console
 		console.warn(possiblyUnhandledRejection.stack);
 	}
 }

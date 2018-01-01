@@ -56,26 +56,26 @@ describe("utils", () => {
 			});
 
 			it("returns `self` if available", () => {
-				const obj = { "foo": "bar" };
+				const obj = { foo: "bar" };
 				nodeGlobal["self"] = obj; // tslint:disable-line:no-string-literal
 				expect(util.getGlobal()).to.equal(obj);
 			});
 
 			it("returns `window` if available", () => {
-				const obj = { "foo": "bar" };
+				const obj = { foo: "bar" };
 				nodeGlobal["window"] = obj; // tslint:disable-line:no-string-literal
 				expect(util.getGlobal()).to.equal(obj);
 			});
 
 			it("returns `global` if available", () => {
-				const obj = { "foo": "bar" };
+				const obj = { foo: "bar" };
 				nodeGlobal["global"] = obj; // tslint:disable-line:no-string-literal
 				expect(util.getGlobal()).to.equal(obj);
 			});
 
 			it("tries to use `this` if Function is available", () => {
-				const obj = { "foo": "bar" };
-				nodeGlobal["Function"] = function(...args: any[]): Function { // tslint:disable-line:no-string-literal
+				const obj = { foo: "bar" };
+				nodeGlobal["Function"] = (...args: any[]): () => typeof obj => { // tslint:disable-line:no-string-literal
 					return () => obj;
 				};
 				expect(util.getGlobal()).to.equal(obj);

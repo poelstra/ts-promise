@@ -24,7 +24,8 @@ import { getGlobal } from "./util";
  * be a viable solution to make Promises available on platforms that otherwise
  * don't have them.
  *
- * @param  {boolean}  force (Optional, default false) Forcibly overwrite existing Promise implementation with ts-promise version.
+ * @param  {boolean}  force (Optional, default false) Forcibly overwrite existing Promise implementation with
+ *                          ts-promise version.
  * @return {boolean}        Returns true when global Promise is (now) a ts-promise (or derived class), false otherwise.
  */
 export default function polyfill(force: boolean = false): boolean {

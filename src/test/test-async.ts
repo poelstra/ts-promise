@@ -149,9 +149,9 @@ describe("async", () => {
 	});
 
 	it("allows overriding default scheduler by timer-stubbing libs (Sinon)", () => {
-		var tasks: Function[] = [];
+		var tasks: Array<(...args: any[]) => void> = [];
 		var oldSetImmediate = global.setImmediate;
-		global.setImmediate = function(cb: (...args: any[]) => void, ...args: any[]): any {
+		global.setImmediate = (cb: (...args: any[]) => void, ...args: any[]): any => {
 			tasks.push(cb);
 		};
 		var called = false;
@@ -165,11 +165,11 @@ describe("async", () => {
 	});
 
 	it("falls back to setTimeout when setImmediate is not available", () => {
-		const tasks: Function[] = [];
+		const tasks: Array<(...args: any[]) => void> = [];
 		const oldSetImmediate = global.setImmediate;
 		const oldSetTimeout = global.setTimeout;
 		delete global["setImmediate"]; // tslint:disable-line:no-string-literal
-		global.setTimeout = function(cb: (...args: any[]) => void, ms: number, ...args: any[]): any {
+		global.setTimeout = (cb: (...args: any[]) => void, ms: number, ...args: any[]): any => {
 			tasks.push(cb);
 		};
 		let called = false;

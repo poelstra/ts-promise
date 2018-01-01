@@ -9,8 +9,8 @@ import "source-map-support/register";
 
 import { expect } from "chai";
 import polyfill from "../lib/polyfill";
-import * as util from "../lib/util";
 import tsPromise from "../lib/Promise";
+import * as util from "../lib/util";
 
 declare var Promise: any;
 

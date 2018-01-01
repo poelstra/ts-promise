@@ -7,7 +7,7 @@
 
 import "source-map-support/register";
 
-import { Promise, Deferred } from "../lib/Promise";
+import { Deferred, Promise } from "../lib/Promise";
 
 var adapter = {
 	deferred: (): Deferred<any> => Promise.defer(),

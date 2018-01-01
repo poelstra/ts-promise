@@ -13,8 +13,8 @@ sourceMapSupport.install({
 });
 
 import { expect } from "chai";
-import Trace from "../lib/Trace";
 import { UnhandledRejection } from "../lib/rejections";
+import Trace from "../lib/Trace";
 
 describe("rejections", () => {
 	describe("UnhandledRejection", () => {

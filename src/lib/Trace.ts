@@ -22,7 +22,7 @@ export default class Trace {
 
 	public static traceLimit: number = 10;
 
-	constructor(ignoreUntil: Function = Trace) {
+	constructor(ignoreUntil: Function = Trace) { // tslint:disable-line:ban-types
 		this.stack = new Stack(ignoreUntil);
 	}
 

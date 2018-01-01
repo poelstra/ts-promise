@@ -9,17 +9,25 @@
 /* tslint:disable:no-bitwise */ // for flags
 
 import async from "./async";
-import { assert } from "./util";
-import Trace from "./Trace";
 import {
-	defaultUnhandledRejectionHandler,
-	defaultPossiblyUnhandledRejectionHandler,
 	defaultPossiblyUnhandledRejectionHandledHandler,
+	defaultPossiblyUnhandledRejectionHandler,
+	defaultUnhandledRejectionHandler,
 } from "./rejections";
+import Trace from "./Trace";
+import { assert } from "./util";
 
 export interface Thenable<T> {
-	then<R>(this: Thenable<T>, onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => R|Thenable<R>): Thenable<R>;
-	then<R>(this: Thenable<T>, onfulfilled?: (value: T) => R|Thenable<R>, onrejected?: (reason: any) => void): Thenable<R|void>;
+	then<R>(
+		this: Thenable<T>,
+		onfulfilled?: (value: T) => R|Thenable<R>,
+		onrejected?: (reason: any) => R|Thenable<R>
+	): Thenable<R>;
+	then<R>(
+		this: Thenable<T>,
+		onfulfilled?: (value: T) => R|Thenable<R>,
+		onrejected?: (reason: any) => void
+	): Thenable<R|void>;
 }
 
 /**
@@ -54,14 +62,14 @@ export interface Inspection<T> {
 	reason(): any;
 }
 
-var trace: (promise: Promise<any>, msg: string) => void = undefined;
+var trace: ((promise: Promise<any>, msg: string) => void) | undefined;
 
 var longTraces: boolean = false;
 
 const enum State {
 	Pending,
 	Fulfilled,
-	Rejected
+	Rejected,
 }
 
 /**
@@ -97,13 +105,8 @@ function wrapNonError(a: any): Error {
 	return a;
 }
 
-interface FulfillmentHandler<T, R> {
-	(value: T|Thenable<T>): R|Thenable<R>;
-}
-
-interface RejectionHandler<R> {
-	(reason: any): R|Thenable<R>;
-}
+type FulfillmentHandler<T, R> = (value: T|Thenable<T>) => R|Thenable<R>;
+type RejectionHandler<R> = (reason: any) => R|Thenable<R>;
 
 /**
  * Subscription to be notified when promise resolves.
@@ -201,7 +204,7 @@ export interface VoidDeferred extends Deferred<void> {
  * Used to set the source of newly created promises.
  * We guarantee that at most one callback of a then() is running at any time.
  */
-var unwrappingPromise: Promise<any> = undefined;
+var unwrappingPromise: Promise<any> | undefined;
 
 var promiseIdCounter = 0;
 
@@ -225,7 +228,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private _id: number = promiseIdCounter++;
 	private _state: State = State.Pending;
 	private _result: any = undefined; // Can be fulfillment value or rejection reason
-	private _handlers: Handler<T, any>[] = undefined;
+	private _handlers: Array<Handler<T, any>> = undefined;
 	private _flags: number = 0;
 	private _trace: Trace = undefined;
 
@@ -410,33 +413,20 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 */
 	public catch<R>(onRejected: (reason: any) => R|Thenable<R>): Promise<T|R>;
 	/**
-	 * Catch only errors of the specified class in case promise is rejected.
+	 * Catch only errors of the specified class(es) in case promise is rejected.
 	 *
 	 * The returned promise is resolved with the output of the callback, so it
 	 * is possible to re-throw the error, but also to return a 'replacement'
 	 * value that should be used instead.
 	 *
-	 * @param predicate   Error class to match (e.g. RangeError)
+	 * @param predicate   Error class or array of classes to match (e.g.
+	 *                    RangeError or [RangeError, TypeError]).
 	 * @param onRejected  Callback called with promise's rejection reason iff
 	 *                    promise is rejected. Callback can return another value
 	 *                    or promise for a value.
 	 * @return Promise for original value, or 'replaced' value in case of error
 	 */
-	public catch<R>(predicate: ErrorClass, onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
-	/**
-	 * Catch only errors of the specified classes in case promise is rejected.
-	 *
-	 * The returned promise is resolved with the output of the callback, so it
-	 * is possible to re-throw the error, but also to return a 'replacement'
-	 * value that should be used instead.
-	 *
-	 * @param predicate   Error classes to match (e.g. [RangeError, TypeError])
-	 * @param onRejected  Callback called with promise's rejection reason iff
-	 *                    promise is rejected. Callback can return another value
-	 *                    or promise for a value.
-	 * @return Promise for original value, or 'replaced' value in case of error
-	 */
-	public catch<R>(predicate: ErrorClass[], onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
+	public catch<R>(predicate: ErrorClass|ErrorClass[], onRejected: (reason: Error) => R|Thenable<R>): Promise<T|R>;
 	/**
 	 * Catch only errors that match the predicate function in case promise is
 	 * rejected.
@@ -487,8 +477,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 						match = predicate(reason);
 					}
 				} else if (Array.isArray(predicate)) {
-					for (let i = 0; i < predicate.length; i++) {
-						if (reason instanceof predicate[i]) {
+					for (const p of predicate) {
+						if (reason instanceof p) {
 							match = true;
 							break;
 						}
@@ -782,7 +772,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @param thenables Array of values or promises for them
 	 * @return promise that resolves with array of all resolved values
 	 */
-	public static all<X>(thenables: (X|Thenable<X>)[]): Promise<X[]> {
+	public static all<X>(thenables: Array<X|Thenable<X>>): Promise<X[]> {
 		return new Promise<X[]>((resolve, reject): void => {
 			assert(Array.isArray(thenables), "thenables must be an Array");
 			if (thenables.length === 0) {
@@ -818,11 +808,10 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @param thenables Array of values or promises for them
 	 * @return promise that resolves to first resolved input promise
 	 */
-	public static race<X>(thenables: (X|Thenable<X>)[]): Promise<X> {
+	public static race<X>(thenables: Array<X|Thenable<X>>): Promise<X> {
 		return new Promise<X>((resolve, reject): void => {
 			assert(Array.isArray(thenables), "thenables must be an Array");
-			for (let i = 0; i < thenables.length; i++) {
-				let t = thenables[i];
+			for (const t of thenables) {
 				let slave: Promise<X> = t instanceof Promise ? t : Promise.resolve(t);
 				Promise.resolve(slave).done(resolve, reject);
 			}
@@ -879,8 +868,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		});
 		return {
 			promise: p,
-			reject: reject,
-			resolve: resolve,
+			reject,
+			resolve,
 		};
 	}
 
@@ -1290,7 +1279,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	): void {
 		var h: Handler<T, any> = {
 			promise: this,
-			onFulfilled,
+			onFulfilled, // tslint:disable-line:object-literal-sort-keys
 			onRejected,
 			slave,
 			done,
