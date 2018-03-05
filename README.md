@@ -18,13 +18,10 @@ Features:
 - Early throwing of unhandled rejections with `.done()`
 - Long stack traces support (switchable at runtime!)
 - [Fast](https://github.com/poelstra/ts-promise-benchmark)
-- Small (gzipped minified version 0.3.1 weighs only 3.5kB, everything included)
+- Small (gzipped minified version 2.0.0 weighs only 4kB, everything included)
 - Efficiently supports infinite recursion (with and without long stack traces)
-- No progression handlers
 - Optional explicit promise chain flushing, useful for test frameworks
 - Readable code (not too many tricks)
-
-For other planned features, see the TODO below.
 
 # Usage example
 
@@ -36,6 +33,9 @@ npm install --save ts-promise
 
 If you use TypeScript, use `"moduleResolution": "node"` in your `tsconfig.json`
 to let it automatically pick up the typings of this package.
+
+For use in the browser, a bundler like Webpack is recommended, but it's also
+possible to use the minified version supplied in `dist/browser.min.js`.
 
 
 ```ts
@@ -103,7 +103,78 @@ Error: my error
     at node.js:902:3
 ```
 
-# Docs
+# Unhandled Rejection detection
+
+TS-Promise supports detection of (possibly) unhandled rejections.
+
+All versions of TS-Promise support 'manually' terminating a promise chain with the `.done()`
+method. If that chain resolved to a rejected promise, it will cause an `UnhandledRejection`
+event.
+
+Starting with version 2.0, promise chains that resolve to a rejected promise which is not
+handled by e.g. a `.catch()` call by the end of the 'tick' will result in a `PossiblyUnhandledRejection`
+event.
+
+If that rejection is later handled (by calling `.catch()` or `.suppressUnhandledRejections()` on it),
+the `PossiblyUnhandledRejectionHandled` event is raised.
+
+For example:
+
+```ts
+const p1 = Promise.reject(new Error("oops"));
+const p2 = Promise.reject(new Error("boom"));
+p1.catch((err) => console.log("no problem here:", err.message));
+setTimeout(
+  () => {
+    p2.catch((err) => console.log("now caught:", err.message));
+  },
+  0
+);
+```
+
+Will output:
+
+```text
+no problem here: oops
+PossiblyUnhandledRejection: Error: boom
+    at Object.<anonymous> (/home/martin/src/ts-promise-test/catching.js:4:27)
+    at Module._compile (module.js:643:30)
+    at Object.Module._extensions..js (module.js:654:10)
+    at Module.load (module.js:556:32)
+    at tryModuleLoad (module.js:499:12)
+    at Function.Module._load (module.js:491:3)
+    at Function.Module.runMain (module.js:684:10)
+    at startup (bootstrap_node.js:187:16)
+    at bootstrap_node.js:608:3
+now caught: boom
+```
+
+Note how the first rejection is caught before or within the same cycle as that it is resolved.
+The second one is handled in the timeout handler, but because that will be executed in the next cycle, it will first be detected as unhandled.
+
+To prevent this, one can use `.suppressUnhandledRejections()`, but it's not recommended to 'just silence' rejections.
+Try to pass them on to calling functions, such that higher level can decide how to handle them.
+
+Starting from version 2.0, it is possible to configure custom handlers for each of these events (see the API reference).
+By default:
+- `UnhandledRejection` will throw an error (which can be caught by e.g. Node's [`uncaughtException`](https://nodejs.org/api/process.html#process_event_uncaughtexception) handler).
+- `PossiblyUnhandledRejection` will emit [`unhandledRejection`](https://nodejs.org/api/process.html#process_event_unhandledrejection)
+ in Node, or an `unhandledrejection` event in the browser (if supported). If the event is not handled (i.e. no handlers attached in Node, or no-one called `.preventDefault()` on the event in the browser), a warning is printed on the console.
+- `PossiblyUnhandledRejectionHandled` will similarly emit [`rejectionHandled`](https://nodejs.org/api/process.html#process_event_rejectionhandled)
+ in Node, or an `rejectionhandled` event in the browser (if supported). However, no message will be printed if the event it unhandled.
+
+It is possible to completely disable this behavior using e.g.:
+
+```ts
+// Disable all (possibly) unhandled rejection detection
+Promise.onUnhandledRejection(false);
+Promise.onPossiblyUnhandledRejection(false);
+Promise.onPossiblyUnhandledRejectionHandled(false);
+```
+
+It is recommended not to install any custom handlers for TS-Promise, but instead use the more generic mechanisms available in Node and the browser. This ensures that rejections from native promises and other promise libraries will all be handled in a consistent manner.
+
+# API
 
 All public methods and interfaces have JSDoc comments, so if your favorite IDE
 supports these, you'll have instant inline documentation.
@@ -171,6 +242,55 @@ Static methods on Promise:
   `flush()` again afterwards.
   It is an error to call `flush` while it is already running.
   Useful in e.g. unit tests to advance program state to the next 'async tick'.
+- `static onUnhandledRejection(handler: boolean | UnhandledRejectionHandler): void`
+  Register a callback to be called whenever a rejected Promise reaches a `.done()` call
+  without `rejectHandler` argument, or either of the `.done()` callbacks itself
+  throws/rejects.
+  This is similar to Node's `unhandledException` event, in that it is guaranteed to be
+  an error, because the programmer explicitly marked the chain with `.done()`.
+  Node also has an `unhandledRejection` event, which is actually closer to ts-promise's
+  `onPossiblyUnhandledRejection` handler.
+  The default handler will throw an `UnhandledRejection` error, which contains the
+  original reason of the rejection.
+  In Node, if you don't have an `unhandledException` event handler, that will cause your
+  program to terminate after printing the error.
+  When overriding the default handler, it is recommended to keep a similar behavior,
+  as your program is likely in an unknown state.
+  Parameters:
+  - `handler` Callback called with the rejection reason (typically an `Error`), and a
+                 `Trace` to the `.done()` call that terminated the chain. Call e.g.
+                 `trace.inspect()` to get the full trace.
+                 If `true` is given, the default handler is installed.
+                 If `false` is given, a no-op handler is installed.
+- `static onPossiblyUnhandledRejection(handler: boolean | PossiblyUnhandledRejectionHandler): void`
+  Register a callback to be called whenever a rejected Promise is not handled
+  by any `.catch()` (or second argument to `.then()`) at the end of one turn of the
+  event loop.
+  Note that such a rejected promise may be handled later (by e.g. calling `.catch(() => {})`
+  on it). In that case, a subsequent call to an `onPossiblyUnhandledRejectionHandled` callback
+  will be made.
+  This mechanism is equivalent to Node's `unhandledRejection` event.
+  The default handler will:
+  - emit Node's `unhandledRejection` event if present, or
+  - emit an `unhandledrejection` (note small R) `PromiseRejectionEvent` on `window` or `self` if present, or
+  - log the rejection using `console.warn()`.
+  Note: when attaching an `unhandledrejection` handler in the browser, make sure to
+  call `event.preventDefault()` to prevent ts-promise's default fallback logging.
+  Parameters:
+  - `handler` Callback called with the (so-far) unhandled rejected promise.
+                 If `true` is given, the default handler is installed.
+                 If `false` is given, a no-op handler is installed.
+- `static onPossiblyUnhandledRejectionHandled(handler: boolean | PossiblyUnhandledRejectionHandledHandler): void`
+  Register a callback to be called whenever a rejected promise previously reported as
+  'possibly unhandled', now becomes handled.
+  This mechanism is equivalent to Node's `rejectionHandled` event.
+  The default handler will emit Node's `rejectionHandled` event if present, or emit a
+  `rejectionhandled` (note small R) event on `window` (or `self`) if present.
+  Parameters:
+  - `handler` Callback called with a rejected promise that was previously reported as
+                 'possibly unhandled'.
+                 If `true` is given, the default handler is installed.
+                 If `false` is given, a no-op handler is installed.
 - `static setTracer(tracer: (promise: Promise<any>, msg: string) => void): void`
   Debug helper to trace promise creation, callback attaching, fullfilments, etc.
   Call with `null` to disable (default), or pass a function that's called during
@@ -178,10 +298,24 @@ Static methods on Promise:
   going to change in the future (and may even be removed completely.)
 
 Methods on Promise instances:
-- `then<R>(onFulfilled?: (value: T) => R | Thenable<R>, onRejected?: (reason: Error) => R | Thenable<R>): Promise<R>`
-  See ES6 Promise spec
-- `catch<R>(onRejected?: (reason: Error) => R | Thenable<R>): Promise<R>`
-  See ES6 Promise spec
+- `then<R>(onFulfilled?: (value: T) => R | Thenable<R>, onRejected?: (reason: any) => R | Thenable<R>): Promise<R>`
+  Run `onFulfilled` handler when this Promise is resolved, or `onRejected` handler when this Promise is rejected.
+  The resolved value or rejection value is passed as the first argument to that handler.
+  The Promise returned by `.then()` is resolved/rejected with the return value/promise/error of the handler.
+  See ES6 Promise spec for further details.
+- `catch<R>(onRejected: (reason: any) => R | Thenable<R>): Promise<T | R>`
+  `catch<R>(predicate: ErrorClass | ErrorClass[], onRejected: (reason: Error) => R | Thenable<R>): Promise<T | R>`
+  `catch<R>(predicate: (reason: any) => boolean, onRejected: (reason: any) => R | Thenable<R>): Promise<T | R>`
+  Run `onRejected` handler in case promise is rejected.
+  The returned promise is resolved with the output of the callback, so it
+  is possible to re-throw the error, but also to return a 'replacement'
+  value that should be used instead.
+  The first variant is equivalent to `.then(undefined, onRejected)`.
+  The second variant allows to pass an error class or array of error classes
+  to match (e.g. `[TypeError, RangeError]`);
+  The third variant allows to pass a custom predicate function to determine
+  wether to call the handler (handler is called if predicate function returns
+  truthy value).
 - `done<R>(onFulfilled?: (value: T) => void | Thenable<void>, onRejected?: (reason: Error) => void | Thenable<void>): void`
   `done()` behaves like `.then()` but does not return a new promise. Instead,
   it throws an `UnhandledRejectionError` when the final result of the promise
@@ -217,6 +351,12 @@ Methods on Promise instances:
   Returns fulfillment value if fulfilled, otherwise throws an error.
 - `reason(): any`
   Returns rejection reason if rejected, otherwise throws an error.
+  Note: this does not consider the rejection to be 'handled', if it is rejected. To do so, explicitly call e.g. `.suppressUnhandledRejections()`.
+- `suppressUnhandledRejections(): void`
+  Prevent this promise from throwing a PossiblyUnhandledRejection in case it becomes rejected. Useful when the rejection will be handled later (i.e. after the current 'tick'), or when the rejection is to be ignored completely.
+  This is equivalent to calling `.catch(() => {})`, but more efficient.
+  Note: any derived promise (e.g. by calling `.then(cb)`) causes a new promise to be created, which can still cause the rejection to be thrown.
+  Note: if the rejection was already notified, the rejection-handled handler will be called.
 - `toString(): string`
   Returns a human-readable representation of the promise and its status.
 - `inspect(): string`
