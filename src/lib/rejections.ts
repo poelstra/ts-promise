@@ -24,7 +24,7 @@ export class BaseUnhandledRejection extends BaseError {
 	public reason: any;
 
 	constructor(name: string, message: string, reason: any) {
-		super(name, `${message}: ${reason}`);
+		super(name, `${message}: ${reason}`) /* istanbul ignore next (TS emitted code) */;
 		this.reason = reason;
 		// In case we have a reason, and it has a stack: use it instead of our
 		// own stack, as it's more helpful to see where the original error was
@@ -49,7 +49,7 @@ export class UnhandledRejection extends BaseUnhandledRejection {
 	public trace: Trace;
 
 	constructor(reason: any, trace: Trace) {
-		super("UnhandledRejection", "unhandled rejection", reason);
+		super("UnhandledRejection", "unhandled rejection", reason) /* istanbul ignore next (TS emitted code) */;
 		// TODO: Find a better way to merge the location of `.done()` in the
 		// trace, because nobody will look for this property...
 		this.trace = trace;
@@ -67,7 +67,11 @@ export class PossiblyUnhandledRejection extends BaseUnhandledRejection {
 	public promise: Promise<any>;
 
 	constructor(promise: Promise<any>) {
-		super("PossiblyUnhandledRejection", "possibly unhandled rejection", promise.reason());
+		super(
+			"PossiblyUnhandledRejection",
+			"possibly unhandled rejection",
+			promise.reason()
+		) /* istanbul ignore next (TS emitted code) */;
 		this.promise = promise;
 	}
 }
