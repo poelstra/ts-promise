@@ -1347,6 +1347,26 @@ describe("Promise", (): void => {
 		// tslint:enable:object-literal-sort-keys
 	});
 
+	describe("errors in rejection handlers", () => {
+		it("should continue calling handlers even if they throw errors", () => {
+			const e1 = new Error("boom1");
+			const e2 = new Error("boom2");
+			const e3 = new Error("boom3");
+			Promise.onUnhandledRejection(() => { throw e1; });
+			Promise.onPossiblyUnhandledRejection(() => { throw e2; });
+			Promise.onPossiblyUnhandledRejectionHandled(() => { throw e3; });
+			Promise.reject(new Error("boom")).done();
+			const p2 = Promise.reject(new Error("boom"));
+			let v: number | undefined;
+			Promise.resolve(42).then((x) => v = x);
+			expect(() => Promise.flush()).to.throw(e1);
+			expect(() => Promise.flush()).to.throw(e2);
+			p2.catch(noop);
+			expect(() => Promise.flush()).to.throw(e3);
+			expect(v).to.equal(42);
+		});
+	});
+
 	describe("long stack traces", (): void => {
 		before(() => {
 			Promise.setLongTraces(true);
