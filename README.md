@@ -383,6 +383,13 @@ npm run prepublish
 
 Notable changes listed below, for details see the version tags in Git.
 
+2.0.0 (2018-05-26):
+- Implement PossiblyUnhandledRejection detection
+  - Emits `unhandledRejection` event in Node, `unhandledrejection` in browser to handle these for all promise libraries
+  - Can be overridden and disabled (see section in Readme for more info)
+  - Logs message if not handled in node or browser
+- Update to Typescript 2.7.2
+
 1.0.0 (2017-11-22):
 - It's production-ready for a long time, so let's call it that way.
 - Change type of argument to catch callbacks to `any` (instead of `Error`) because rejections (e.g. from other
