@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/poelstra/ts-promise",
   "scripts": {
-    "test": "npm run -s lint && npm run -s build && npm run -s mocha",
+    "test": "npm run -s build && npm run -s lint && npm run -s mocha",
     "mocha": "mocha -R spec dist/test/test-*.js",
     "cover": "npm run -s build && istanbul cover --report json _mocha -- -R spec dist/test/test-*.js && remap-istanbul -i coverage/coverage-final.json -t html -o coverage/html-report",
     "lint": "tslint -t verbose src/**/*.ts",
