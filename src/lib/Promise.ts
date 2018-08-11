@@ -20,13 +20,13 @@ import { assert } from "./util";
 export interface Thenable<T> {
 	then<R>(
 		this: Thenable<T>,
-		onfulfilled?: (value: T) => R|Thenable<R>,
-		onrejected?: (reason: any) => R|Thenable<R>
+		onfulfilled?: ((value: T) => R|Thenable<R>) | null | undefined,
+		onrejected?: ((reason: any) => R|Thenable<R>) | null | undefined
 	): Thenable<R>;
 	then<R>(
 		this: Thenable<T>,
-		onfulfilled?: (value: T) => R|Thenable<R>,
-		onrejected?: (reason: any) => void
+		onfulfilled?: ((value: T) => R|Thenable<R>) | null | undefined,
+		onrejected?: ((reason: any) => void) | null | undefined
 	): Thenable<R|void>;
 }
 
@@ -335,8 +335,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @return Promise for value returned by either of the callbacks
 	 */
 	public then<R>(
-		onFulfilled: (value: T) => R|Thenable<R>,
-		onRejected?: (reason: any) => R|Thenable<R>
+		onFulfilled: ((value: T) => R|Thenable<R>) | null | undefined,
+		onRejected?: ((reason: any) => R|Thenable<R>) | null | undefined
 	): Promise<R> {
 		trace && trace(this, `then(${typeof onFulfilled}, ${typeof onRejected})`);
 
