@@ -50,7 +50,7 @@ describe("Promise", (): void => {
 		const result: number[] = [];
 		p.then((): void => { result.push(1); }).done((): void => { result.push(3); });
 		p.then((): void => { result.push(2); }).done((): void => { result.push(4); });
-		resolve(42);
+		resolve!(42);
 		Promise.flush();
 		expect(result).to.deep.equal([1, 2, 3, 4]);
 	});
@@ -86,7 +86,7 @@ describe("Promise", (): void => {
 			const p = new Promise<number>((resolve, reject) => {
 				resolve(42);
 			});
-			let result: number;
+			let result: number | undefined;
 			p.then((v) => result = v);
 			Promise.flush();
 			expect(result).to.equal(42);
@@ -114,7 +114,7 @@ describe("Promise", (): void => {
 				resolve(42);
 				throw new Error("boom");
 			});
-			let result: number;
+			let result: number | undefined;
 			p.then((v) => result = v);
 			Promise.flush();
 			expect(result).to.be.equal(42);
@@ -146,7 +146,7 @@ describe("Promise", (): void => {
 			});
 		});
 		it("should recursively resolve Thenables", () => {
-			let results: number[];
+			let results: number[] | undefined;
 			const d1 = Promise.defer<number>();
 			const d2 = Promise.defer<number>();
 			Promise.all([d1.promise, d2.promise]).then((r) => results = r);
@@ -158,7 +158,7 @@ describe("Promise", (): void => {
 			expect(results).to.deep.equal([2, 2]);
 		});
 		it("should accept non-Thenables", () => {
-			let results: number[];
+			let results: number[] | undefined;
 			const d1 = Promise.defer<number>();
 			Promise.all([d1.promise, 2]).then((r) => results = r);
 			Promise.flush();
@@ -168,14 +168,14 @@ describe("Promise", (): void => {
 			expect(results).to.deep.equal([1, 2]);
 		});
 		it("should accept non-Promise Thenables", () => {
-			let results: number[];
+			let results: number[] | undefined;
 			let callback: (n: number) => void;
 			// Create rather dirty Promise-mock
 			const thenable: Thenable<number> = {
-				then: (cb: (n: number) => void): Thenable<any> => { callback = cb; return null; },
+				then: (cb: (n: number) => void): Thenable<any> => { callback = cb; return Promise.resolve(); },
 			};
 			Promise.all([thenable]).then((r) => results = r);
-			callback(42);
+			callback!(42);
 			expect(results).to.equal(undefined);
 			Promise.flush();
 			expect(results).to.deep.equal([42]);
@@ -207,7 +207,7 @@ describe("Promise", (): void => {
 			});
 		});
 		it("should recursively resolve Thenables", () => {
-			let result: number;
+			let result: number | undefined;
 			const d1 = Promise.defer<number>();
 			const d2 = Promise.defer<number>();
 			Promise.race([d1.promise]).then((n) => result = n);
@@ -219,21 +219,21 @@ describe("Promise", (): void => {
 			expect(result).to.deep.equal(2);
 		});
 		it("should accept non-Thenables", () => {
-			let result: number;
+			let result: number | undefined;
 			const d1 = Promise.defer<number>();
 			Promise.race([d1.promise, 2]).then((n) => result = n);
 			Promise.flush();
 			expect(result).to.equal(2);
 		});
 		it("should accept non-Promise Thenables", () => {
-			let result: number;
+			let result: number | undefined;
 			let callback: (n: number) => void;
 			// Create rather dirty Promise-mock
 			const thenable: Thenable<number> = {
-				then: (cb: (n: number) => void): Thenable<any> => { callback = cb; return null; },
+				then: (cb: (n: number) => void): Thenable<any> => { callback = cb; return Promise.resolve(); },
 			};
 			Promise.race([thenable]).then((n) => result = n);
-			callback(42);
+			callback!(42);
 			expect(result).to.equal(undefined);
 			Promise.flush();
 			expect(result).to.equal(42);
@@ -278,6 +278,10 @@ describe("Promise", (): void => {
 				expect(n).to.equal(42);
 				done();
 			});
+		});
+		it("should be assignable to ES2015 PromiseLike", (done) => {
+			const p: PromiseLike<void> = Promise.resolve();
+			p.then(done);
 		});
 	});
 
@@ -459,7 +463,7 @@ describe("Promise", (): void => {
 			// Pathological case, only tested for correctness, typing requires
 			// passing the callback
 			const p = Promise.resolve(42);
-			let actual = p.catch<number>(undefined);
+			let actual = p.catch<number>(<any>undefined);
 			let expected: Promise<number>;
 			expected = actual;
 			actual = expected;
@@ -565,7 +569,7 @@ describe("Promise", (): void => {
 			it("accepts various error classes as predicate", () => {
 				const p1 = Promise.reject(new Error()).catch(Error, catcher);
 				const p2 = Promise.reject(new BaseError("", "")).catch(BaseError, catcher);
-				const p3 = Promise.reject(new UnhandledRejection(undefined, undefined)).catch(UnhandledRejection, catcher);
+				const p3 = Promise.reject(new UnhandledRejection(undefined, new Trace())).catch(UnhandledRejection, catcher);
 				Promise.flush();
 				expect(p1.value()).to.equal(caughtSentinel);
 				expect(p2.value()).to.equal(caughtSentinel);
@@ -575,7 +579,7 @@ describe("Promise", (): void => {
 	});
 
 	describe("#finally()", (): void => {
-		let called: Promise<number>;
+		let called: Promise<number> | undefined;
 		let p: Promise<number>;
 
 		beforeEach(() => {
@@ -702,7 +706,7 @@ describe("Promise", (): void => {
 		});
 		it("is silent when its reject callback returns non-Error Thenable", (): void => {
 			const thenable: Thenable<void> = {
-				then: (cb: (value?: void) => void): Thenable<any> => { cb(); return null; },
+				then: (cb: (value?: void) => void): Thenable<any> => { cb(); return Promise.resolve(); },
 			};
 			Promise.reject(new Error("boom")).done(null, (r) => thenable);
 			expect(() => Promise.flush()).to.not.throw();
@@ -768,7 +772,7 @@ describe("Promise", (): void => {
 		it("should support long traces on throw from callback", () => {
 			Promise.setLongTraces(true);
 			Promise.resolve().done(() => { throw new Error("boom"); });
-			let caught: UnhandledRejection;
+			let caught: UnhandledRejection | undefined;
 			try {
 				Promise.flush();
 			} catch (e) {
@@ -776,14 +780,14 @@ describe("Promise", (): void => {
 			}
 			expect(caught).to.be.instanceof(UnhandledRejection);
 			// TODO: assert the trace property for correctness
-			expect(caught.trace.inspect()).to.not.contain("no trace");
+			expect(caught!.trace.inspect()).to.not.contain("no trace");
 			Promise.setLongTraces(false);
 		});
 		it("should support long traces on throw from callback without non-long-trace source", () => {
 			const p = Promise.resolve();
 			Promise.setLongTraces(true);
 			p.done(() => { throw new Error("boom"); });
-			let caught: UnhandledRejection;
+			let caught: UnhandledRejection | undefined;
 			try {
 				Promise.flush();
 			} catch (e) {
@@ -791,13 +795,13 @@ describe("Promise", (): void => {
 			}
 			expect(caught).to.be.instanceof(UnhandledRejection);
 			// TODO: assert the trace property for correctness
-			expect(caught.trace.inspect()).to.not.contain("no trace");
+			expect(caught!.trace.inspect()).to.not.contain("no trace");
 			Promise.setLongTraces(false);
 		});
 		it("should support long traces on rejection without callbacks", () => {
 			Promise.setLongTraces(true);
 			Promise.reject(new Error("boom")).done();
-			let caught: UnhandledRejection;
+			let caught: UnhandledRejection | undefined;
 			try {
 				Promise.flush();
 			} catch (e) {
@@ -805,7 +809,7 @@ describe("Promise", (): void => {
 			}
 			expect(caught).to.be.instanceof(UnhandledRejection);
 			// TODO: assert the trace property for correctness
-			expect(caught.trace.inspect()).to.not.contain("no trace");
+			expect(caught!.trace.inspect()).to.not.contain("no trace");
 			Promise.setLongTraces(false);
 		});
 		it("should mention there's no stack trace when there is none", () => {
@@ -816,14 +820,14 @@ describe("Promise", (): void => {
 				(<any>e).stack = undefined;
 				throw e;
 			}).done();
-			let caught: UnhandledRejection;
+			let caught: UnhandledRejection | undefined;
 			try {
 				Promise.flush();
 			} catch (e) {
 				caught = e;
 			}
 			expect(caught).to.be.instanceof(UnhandledRejection);
-			expect(caught.stack).to.equal("UnhandledRejection: Error: boom");
+			expect(caught!.stack).to.equal("UnhandledRejection: Error: boom");
 		});
 	}); // #done()
 
@@ -1079,8 +1083,8 @@ describe("Promise", (): void => {
 		});
 
 		it("throws on invalid input", () => {
-			expect(() => Promise.onUnhandledRejection(undefined)).to.throw(TypeError);
-			expect(() => Promise.onUnhandledRejection(null)).to.throw(TypeError);
+			expect(() => Promise.onUnhandledRejection(<any>undefined)).to.throw(TypeError);
+			expect(() => Promise.onUnhandledRejection(<any>null)).to.throw(TypeError);
 			expect(() => Promise.onUnhandledRejection(<any>{})).to.throw(TypeError);
 			expect(() => Promise.onUnhandledRejection(<any>42)).to.throw(TypeError);
 		});
@@ -1129,8 +1133,8 @@ describe("Promise", (): void => {
 		});
 
 		it("throws on invalid input", () => {
-			expect(() => Promise.onPossiblyUnhandledRejection(undefined)).to.throw(TypeError);
-			expect(() => Promise.onPossiblyUnhandledRejection(null)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejection(<any>undefined)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejection(<any>null)).to.throw(TypeError);
 			expect(() => Promise.onPossiblyUnhandledRejection(<any>{})).to.throw(TypeError);
 			expect(() => Promise.onPossiblyUnhandledRejection(<any>42)).to.throw(TypeError);
 		});
@@ -1188,8 +1192,8 @@ describe("Promise", (): void => {
 		});
 
 		it("throws on invalid input", () => {
-			expect(() => Promise.onPossiblyUnhandledRejectionHandled(undefined)).to.throw(TypeError);
-			expect(() => Promise.onPossiblyUnhandledRejectionHandled(null)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejectionHandled(<any>undefined)).to.throw(TypeError);
+			expect(() => Promise.onPossiblyUnhandledRejectionHandled(<any>null)).to.throw(TypeError);
 			expect(() => Promise.onPossiblyUnhandledRejectionHandled(<any>{})).to.throw(TypeError);
 			expect(() => Promise.onPossiblyUnhandledRejectionHandled(<any>42)).to.throw(TypeError);
 		});
@@ -1202,7 +1206,7 @@ describe("Promise", (): void => {
 
 		interface Event {
 			type: "unhandled" | "handled" | "catch";
-			promise: Promise<any>;
+			promise: Promise<any> | undefined;
 		}
 		let events: Event[];
 
@@ -1445,7 +1449,7 @@ describe("Promise", (): void => {
 			Promise.resolve({
 				then: (callback: (n: number) => void): Thenable<number> => {
 					callback(42);
-					return this;
+					return Promise.resolve(0);
 				},
 			});
 			Promise.flush();

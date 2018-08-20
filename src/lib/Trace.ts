@@ -18,7 +18,7 @@ import Stack from "./Stack";
  */
 export default class Trace {
 	public stack: Stack;
-	public sources: Stack[];
+	public sources?: Stack[];
 
 	public static traceLimit: number = 10;
 

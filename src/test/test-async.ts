@@ -35,7 +35,7 @@ describe("async", () => {
 		async.enqueue(() => { /* empty */ }, undefined);
 		expect(called).to.equal(1);
 		// Flush using the scheduled flush, trigger 'deactivated'
-		flusher();
+		flusher!();
 		// Enqueue another, triggers another flush
 		async.enqueue(() => { /* empty */ }, undefined);
 		expect(called).to.equal(2);
@@ -45,7 +45,7 @@ describe("async", () => {
 		async.enqueue(done, undefined);
 		expect(called).to.equal(2);
 		// Execute the enqueued done callback
-		flusher();
+		flusher!();
 	});
 
 	it("can reset scheduler to default, using null", (done: MochaDone) => {
@@ -57,10 +57,10 @@ describe("async", () => {
 		});
 		async.enqueue(() => { /* empty */ }, undefined);
 		expect(called).to.equal(1);
-		flusher();
+		flusher!();
 
 		/* tslint:disable:no-null-keyword */
-		async.setScheduler(null); // old API behaviour for resetting
+		async.setScheduler(<any>null); // old API behaviour for resetting
 		/* tslint:enable:no-null-keyword */
 		// The done callback should be scheduled and executed by default scheduler
 		async.enqueue(done, undefined);
@@ -76,7 +76,7 @@ describe("async", () => {
 		});
 		async.enqueue(() => { /* empty */ }, undefined);
 		expect(called).to.equal(1);
-		flusher();
+		flusher!();
 
 		async.setScheduler(undefined); // new API behaviour for resetting
 		// The done callback should be scheduled and executed by default scheduler
@@ -134,7 +134,7 @@ describe("async", () => {
 			flusher();
 		}).to.throw("boom");
 		expect(called).to.equal(2);
-		flusher();
+		flusher!();
 	});
 
 	it("disallows recursive flush, still runs remaining", (done: MochaDone) => {

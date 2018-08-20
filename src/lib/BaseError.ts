@@ -10,7 +10,7 @@
  * has correct prototype chain.
  */
 export default class BaseError extends Error {
-	public stack: string; // provided by V8
+	public stack!: string; // provided by V8
 
 	constructor(name: string, message: string) {
 		/* istanbul ignore next: internal TypeScript code */

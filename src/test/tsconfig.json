@@ -6,7 +6,8 @@
         ],
         "lib": [
             "es5",
-            "es2015.promise"
+            "es2015.promise",
+            "es2018.promise"
         ]
     }
 }

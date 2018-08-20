@@ -86,7 +86,7 @@ describe("Trace", () => {
 		for (let i = 0; i < Trace.traceLimit + 1; i++) {
 			t = test2(t);
 		}
-		expect(t.sources.length).to.equal(Trace.traceLimit);
+		expect(t.sources!.length).to.equal(Trace.traceLimit);
 	});
 
 	it("supports recursive traces", () => {

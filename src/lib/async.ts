@@ -117,7 +117,7 @@ class Ring {
 			// So, this._current is guaranteed to point to something 'later'
 			// than queue at index 0, and we can safely move index 0 to the
 			// pool.
-			this._pool.push(this._ring.shift());
+			this._pool.push(this._ring.shift()!);
 		}
 
 		// Ring is now guaranteed to contain only a single, empty queue, so we
@@ -136,13 +136,25 @@ class Ring {
 	}
 }
 
+function defaultScheduler(callback: () => void): void {
+	// Note: we explicitly re-check types and call it here (instead of
+	// e.g. assigning it to a variable once at startup), to allow
+	// setImmediate / setTimeout to be replaced by mocked ones
+	// (e.g. Sinon's useFakeTimers())
+	if (typeof setImmediate === "function") {
+		setImmediate(callback);
+	} else {
+		setTimeout(callback, 0);
+	}
+}
+
 export class Async {
 	private _pool: CallQueue[] = [];
 	private _mainRing: Ring = new Ring(this._pool);
 	private _idleRing: Ring = new Ring(this._pool);
 	private _flushing: boolean = false;
 	private _scheduled: boolean = false;
-	private _scheduler: (callback: () => void) => void = undefined;
+	private _scheduler?: (callback: () => void) => void = undefined;
 
 	/**
 	 * Configure alternative scheduler to use.
@@ -250,14 +262,8 @@ export class Async {
 
 	private _schedule(): void {
 		assert(!this._scheduled);
-		// Note: we 'fall back' to setImmediate here (instead of e.g.
-		// assigning it to the _scheduler property once), to allow
-		// setImmediate to be e.g. replaced by a mocked one (e.g. Sinon's
-		// useFakeTimers())
-		let scheduler = this._scheduler;
-		if (!scheduler) {
-			scheduler = typeof setImmediate === "function" ? setImmediate : setTimeout;
-		}
+		const scheduler = this._scheduler || defaultScheduler;
+		// Call scheduler without a `this`
 		scheduler(this._flusher);
 		this._scheduled = true;
 	}

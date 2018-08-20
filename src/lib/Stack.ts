@@ -12,7 +12,7 @@
 const hasStacks = (typeof (<any>Error).captureStackTrace === "function");
 
 export default class Stack {
-	private stack: string; // Note: name *must* be "stack", without underscore
+	private stack!: string; // Note: name *must* be "stack", without underscore
 
 	constructor(ignoreUntil: Function = Stack) { // tslint:disable-line:ban-types
 		/* istanbul ignore else */ // TODO: remove when testing for non-V8

@@ -12,6 +12,7 @@
 		"moduleResolution": "node",
 		"outDir": "../dist/",
 		"rootDir": ".",
+		"strict": true,
 		"types": [
 			"node"
 		],

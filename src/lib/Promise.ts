@@ -80,7 +80,7 @@ const enum Flags {
 	UnhandledRejectionNotified = 2,
 }
 
-function internalResolver(fulfill: (value: any) => void, reject: (reason: any) => void): void {
+function internalResolver(fulfill?: (value: any) => void, reject?: (reason: any) => void): void {
 	/* no-op, sentinel value */
 }
 
@@ -105,8 +105,8 @@ function wrapNonError(a: any): Error {
 	return a;
 }
 
-type FulfillmentHandler<T, R> = (value: T|Thenable<T>) => R|Thenable<R>;
-type RejectionHandler<R> = (reason: any) => R|Thenable<R>;
+type FulfillmentHandler<T, R> = ((value: T) => R|Thenable<R>) | null | undefined;
+type RejectionHandler<R> = ((reason: any) => R|Thenable<R>) | null | undefined;
 
 /**
  * Subscription to be notified when promise resolves.
@@ -132,8 +132,8 @@ interface Handler<T, R> {
 	promise: Promise<T>;
 	onFulfilled: FulfillmentHandler<T, R>;
 	onRejected: RejectionHandler<R>;
-	slave: Promise<R>; // Will be undefined if done is truthy
-	done: Trace; // Will be undefined if slave is truthy
+	slave: Promise<R> | undefined; // Will be undefined if done is truthy
+	done: Trace | undefined; // Will be undefined if slave is truthy
 }
 
 const dummyDoneTrace = new Trace();
@@ -228,9 +228,9 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private _id: number = promiseIdCounter++;
 	private _state: State = State.Pending;
 	private _result: any = undefined; // Can be fulfillment value or rejection reason
-	private _handlers: Array<Handler<T, any>> = undefined;
+	private _handlers: Array<Handler<T, any>> | undefined = undefined;
 	private _flags: number = 0;
-	private _trace: Trace = undefined;
+	private _trace: Trace | undefined = undefined;
 
 	private static _onUnhandledRejectionHandler: UnhandledRejectionHandler;
 	private static _onPossiblyUnhandledRejectionHandler: PossiblyUnhandledRejectionHandler;
@@ -272,7 +272,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		let called = false;
 		try {
 			resolver(
-				(y: T): void => {
+				(y: T | Thenable<T>): void => {
 					if (called) {
 						// 2.3.3.3.3: If both `resolvePromise` and `rejectPromise` are called,
 						// or multiple calls to the same argument are made, the first call
@@ -378,8 +378,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *                    to be thrown.
 	 */
 	public done<R>(
-		onFulfilled?: (value: T) => void|Thenable<void>,
-		onRejected?: (reason: any) => void|Thenable<void>
+		onFulfilled?: ((value: T) => void|Thenable<void>) | null | undefined,
+		onRejected?: ((reason: any) => void|Thenable<void>) | null | undefined
 	): void {
 		trace && trace(this, `done(${typeof onFulfilled}, ${typeof onRejected})`);
 		if (this._state === State.Fulfilled && typeof onFulfilled !== "function") {
@@ -464,7 +464,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	public catch<R>(): Promise<T|R> {
 		if (arguments.length === 1) {
 			const onRejected: (reason: any) => R|Thenable<R> = arguments[0];
-			return this.then(undefined, onRejected);
+			return this.then<T|R>(undefined, onRejected);
 		} else {
 			const predicate: any = arguments[0];
 			const onRejected: (reason: any) => R|Thenable<R> = arguments[1];
@@ -797,14 +797,15 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		this._state = State.Rejected;
 		this._result = reason;
 		if (this._trace && this._result instanceof Error && !(<any>this._result).trace) {
-			(<any>this._result).trace = this._trace;
+			const stackTrace = this._trace;
+			(<any>this._result).trace = stackTrace;
 			// TODO: Meh, this always accesses '.stack', which is supposed to be expensive
 			const originalStack = this._result.stack;
 			// Stack may be undefined if e.g. a Stack Overflow occurred
 			if (originalStack) {
 				Object.defineProperty(this._result, "stack", {
 					enumerable: false,
-					get: (): string => originalStack + "\n  from Promise at:\n" + this._trace.inspect(),
+					get: (): string => originalStack + "\n  from Promise at:\n" + stackTrace.inspect(),
 				});
 			}
 		}
@@ -895,8 +896,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	private _enqueue(
 		onFulfilled: FulfillmentHandler<T, any>,
 		onRejected: RejectionHandler<any>,
-		slave: Promise<any>,
-		done: Trace
+		slave: Promise<any> | undefined,
+		done: Trace | undefined
 	): void {
 		const h: Handler<T, any> = {
 			promise: this,
@@ -948,7 +949,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 * @param handler The handler being processed
 	 */
 	private _unwrap(handler: Handler<T, any>): void {
-		const callback: (x: any) => any = this._state === State.Fulfilled ? handler.onFulfilled : handler.onRejected;
+		const callback = this._state === State.Fulfilled ? handler.onFulfilled : handler.onRejected;
 		if (handler.done) {
 			// Unwrap .done() callbacks
 			trace && trace(this, `_unwrap()`);
@@ -992,7 +993,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		//    resolved when we do (i.e. its fate is determined by us)
 		//    -> callbacks will both be undefined, slave is that other promise
 		//       that wants to be resolved with our result
-		const slave = handler.slave;
+		const slave: Promise<any> = handler.slave!;
 		trace && trace(this, `_unwrap(${slave._id})`);
 		if (typeof callback === "function") {
 			// Case 1
@@ -1182,8 +1183,8 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		});
 		return {
 			promise: p,
-			reject,
-			resolve,
+			reject: reject!,
+			resolve: resolve!,
 		};
 	}
 
@@ -1224,7 +1225,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 		if (arguments[1] === undefined) {
 			// delay(ms)
 			const ms = arguments[0];
-			return new Promise<void>((resolve) => {
+			return new Promise<void|R>((resolve) => {
 				setTimeout(resolve, ms);
 			});
 		}
