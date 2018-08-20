@@ -155,6 +155,8 @@ The second one is handled in the timeout handler, but because that will be execu
 To prevent this, one can use `.suppressUnhandledRejections()`, but it's not recommended to 'just silence' rejections.
 Try to pass them on to calling functions, such that higher level can decide how to handle them.
 
+## Custom unhandled rejection event handlers
+
 Starting from version 2.0, it is possible to configure custom handlers for each of these events (see the API reference).
 By default:
 - `UnhandledRejection` will throw an error (which can be caught by e.g. Node's [`uncaughtException`](https://nodejs.org/api/process.html#process_event_uncaughtexception) handler).
@@ -162,6 +164,10 @@ By default:
  in Node, or an `unhandledrejection` event in the browser (if supported). If the event is not handled (i.e. no handlers attached in Node, or no-one called `.preventDefault()` on the event in the browser), a warning is printed on the console.
 - `PossiblyUnhandledRejectionHandled` will similarly emit [`rejectionHandled`](https://nodejs.org/api/process.html#process_event_rejectionhandled)
  in Node, or an `rejectionhandled` event in the browser (if supported). However, no message will be printed if the event it unhandled.
+
+It is recommended not to install any custom handlers for TS-Promise, but instead use the more generic mechanisms available in Node and the browser. This ensures that rejections from native promises and other promise libraries will all be handled in a consistent manner.
+
+## Disabling unhandled rejection handling
 
 It is possible to completely disable this behavior using e.g.:
 
@@ -172,7 +178,36 @@ Promise.onPossiblyUnhandledRejection(false);
 Promise.onPossiblyUnhandledRejectionHandled(false);
 ```
 
-It is recommended not to install any custom handlers for TS-Promise, but instead use the more generic mechanisms available in Node and the browser. This ensures that rejections from native promises and other promise libraries will all be handled in a consistent manner.
+## Multiple rejections using the same reason (error)
+
+When handling a rejection, TS-Promise only considers that specific (rejected) promise to be
+handled, not all other promises being rejected with the same reason (e.g. error).
+
+The reason for this is that such promises are indeed (sometimes subtly) different because they follow
+another code path (branch), and care should be taken to handle any errors in that branch, too.
+
+For example, consider the following contrived example:
+
+```ts
+function someFunction(p) {
+  p.catch((e) => /* handle error */);
+}
+
+function otherFunction(p) {
+  p.then(() => /* something */ );
+  // Note: unhandled rejection!
+}
+
+const result = doSomething(); // returns rejected Promise
+someFunction(result);
+otherFunction(result);
+```
+
+Note how `otherFunction()` is taking a different code path, and should be handling that
+rejection itself, even though it is also already handled by `someFunction()`.
+(For example, consider what would happen if `someFunction()` was later removed: the
+code in `otherFunction()` suddenly starts generating unhandled rejection errors, which
+were not there before.)
 
 # API
 
