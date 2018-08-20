@@ -418,6 +418,11 @@ npm run prepublish
 
 Notable changes listed below, for details see the version tags in Git.
 
+2.1.0 (2018-08-20):
+- Improve compatibility with native Promise (through e.g. `PromiseLike`) in strictNullChecks mode
+- Update to Typescript 3.0.1
+- Compile using strict mode
+
 2.0.0 (2018-05-26):
 - Implement PossiblyUnhandledRejection detection
   - Emits `unhandledRejection` event in Node, `unhandledrejection` in browser to handle these for all promise libraries
