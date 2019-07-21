@@ -213,9 +213,7 @@ let promiseIdCounter = 0;
  *
  * Allows to pass classes to e.g. `Promise.catch()` which derive from Error.
  */
-export interface ErrorClass {
-	new (...args: any[]): Error;
-}
+export type ErrorClass = new (...args: any[]) => Error;
 
 export type UnhandledRejectionHandler = (reason: any, doneTrace: Trace) => void;
 export type PossiblyUnhandledRejectionHandler = (promise: Promise<any>) => void;
