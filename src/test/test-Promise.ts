@@ -419,7 +419,7 @@ describe("Promise", (): void => {
 		});
 		it("has correct typing for both handlers of different type", () => {
 			const p = Promise.resolve();
-			let actual = p.then<string|number>(() => 42, (e) => "foo");
+			let actual = p.then(() => 42, (e) => "foo");
 			let expected: Promise<string|number>;
 			expected = actual;
 			actual = expected;

@@ -18,16 +18,16 @@ import Trace from "./Trace";
 import { assert } from "./util";
 
 export interface Thenable<T> {
-	then<R>(
+	then<R1 = T, R2 = never>(
 		this: Thenable<T>,
-		onfulfilled?: ((value: T) => R|Thenable<R>) | null | undefined,
-		onrejected?: ((reason: any) => R|Thenable<R>) | null | undefined
-	): Thenable<R>;
-	then<R>(
+		onfulfilled?: ((value: T) => R1|Thenable<R1>) | null | undefined,
+		onrejected?: ((reason: any) => R2|Thenable<R2>) | null | undefined
+	): Thenable<R1 | R2>;
+	then<R1 = T>(
 		this: Thenable<T>,
-		onfulfilled?: ((value: T) => R|Thenable<R>) | null | undefined,
+		onfulfilled?: ((value: T) => R1|Thenable<R1>) | null | undefined,
 		onrejected?: ((reason: any) => void) | null | undefined
-	): Thenable<R|void>;
+	): Thenable<R1|void>;
 }
 
 /**
@@ -332,10 +332,10 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	 *                    another value or promise for a value.
 	 * @return Promise for value returned by either of the callbacks
 	 */
-	public then<R>(
-		onFulfilled: ((value: T) => R|Thenable<R>) | null | undefined,
-		onRejected?: ((reason: any) => R|Thenable<R>) | null | undefined
-	): Promise<R> {
+	public then<R1 = T, R2 = never>(
+		onFulfilled: ((value: T) => R1|Thenable<R1>) | null | undefined,
+		onRejected?: ((reason: any) => R2|Thenable<R2>) | null | undefined
+	): Promise<R1 | R2> {
 		trace && trace(this, `then(${typeof onFulfilled}, ${typeof onRejected})`);
 
 		if (this._state === State.Fulfilled && typeof onFulfilled !== "function" ||
@@ -462,7 +462,7 @@ export class Promise<T> implements Thenable<T>, Inspection<T> {
 	public catch<R>(): Promise<T|R> {
 		if (arguments.length === 1) {
 			const onRejected: (reason: any) => R|Thenable<R> = arguments[0];
-			return this.then<T|R>(undefined, onRejected);
+			return this.then(undefined, onRejected);
 		} else {
 			const predicate: any = arguments[0];
 			const onRejected: (reason: any) => R|Thenable<R> = arguments[1];
