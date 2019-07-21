@@ -418,6 +418,10 @@ npm run prepublish
 
 Notable changes listed below, for details see the version tags in Git.
 
+2.2.0 (2018-07-21):
+- Improve compatibility with native Promise (through e.g. `PromiseLike`) with newer TypeScript definitions
+- Update to TypeScript 3.5.3
+
 2.1.0 (2018-08-20):
 - Improve compatibility with native Promise (through e.g. `PromiseLike`) in strictNullChecks mode
 - Update to Typescript 3.0.1
