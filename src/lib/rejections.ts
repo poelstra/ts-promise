@@ -145,7 +145,10 @@ export function defaultPossiblyUnhandledRejectionHandler(promise: Promise<any>):
 
 	// First try to emit Node event
 	if (typeof process !== "undefined" && typeof process.emit === "function") {
-		if (process.emit("unhandledRejection", promise.reason(), promise)) {
+		// Have to cast promise to any, because current typings of process.emit() have specific
+		// typings for arguments to "unhandledRejection", which say promise must be a Promise,
+		// but that Promise is the built-in type.
+		if (process.emit("unhandledRejection", promise.reason(), promise as any)) {
 			// A handler was called
 			log = false;
 		}
@@ -172,7 +175,10 @@ export function defaultPossiblyUnhandledRejectionHandler(promise: Promise<any>):
 export function defaultPossiblyUnhandledRejectionHandledHandler(promise: Promise<any>): void {
 	// First try to emit Node event
 	if (typeof process !== "undefined" && typeof process.emit === "function") {
-		process.emit("rejectionHandled", promise);
+		// Have to cast promise to any, because current typings of process.emit() have specific
+		// typings for arguments to "rejectionHandled", which say promise must be a Promise,
+		// but that Promise is the built-in type.
+		process.emit("rejectionHandled", promise as any);
 	} else if (typeof PromiseRejectionEvent === "function") {
 		// Then fire a browser event if supported by the browser
 		emitRejectionEvent("rejectionhandled", promise.reason(), promise);

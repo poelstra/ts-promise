@@ -1101,7 +1101,8 @@ describe("Promise", (): void => {
 		}
 		beforeEach(() => {
 			nodeEvents = [];
-			process.on("unhandledRejection", nodeUnhandledRejectionHandler);
+			// Cast is necessary because the types of Promise aren't exactly compatible
+			process.on("unhandledRejection", nodeUnhandledRejectionHandler as unknown as NodeJS.UnhandledRejectionListener);
 		});
 		afterEach(() => {
 			process.removeListener("unhandledRejection", nodeUnhandledRejectionHandler);
@@ -1154,7 +1155,8 @@ describe("Promise", (): void => {
 		beforeEach(() => {
 			nodeEvents = [];
 			Promise.onPossiblyUnhandledRejection(false);
-			process.on("rejectionHandled", nodeRejectionHandledHandler);
+			// Cast is necessary because the types of Promise aren't exactly compatible
+			process.on("rejectionHandled", nodeRejectionHandledHandler as unknown as NodeJS.RejectionHandledListener);
 		});
 		afterEach(() => {
 			process.removeListener("rejectionHandled", nodeRejectionHandledHandler);

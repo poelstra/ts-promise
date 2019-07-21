@@ -79,7 +79,7 @@ describe("rejections", () => {
 		it("should emit event on process in Node and log if not handled", () => {
 			const warnSpy = sandbox.stub(console, "warn");
 			process.removeAllListeners("unhandledRejection");
-			const emitSpy = sandbox.spy(process, "emit").withArgs("unhandledRejection");
+			const emitSpy = (sandbox.spy(process, "emit") as sinon.SinonSpy).withArgs("unhandledRejection");
 			const reason = new Error("boom");
 			const promise = Promise.reject(reason);
 			Promise.flush();
@@ -103,9 +103,9 @@ describe("rejections", () => {
 			const warnSpy = sandbox.stub(console, "warn");
 			sandbox.stub(process, "emit").value(undefined);
 			const sentinel = { foo: "bar" };
-			const preSpy = sinon.spy(() => sentinel);
+			const preSpy = sinon.spy((...args: unknown[]) => sentinel);
 			global[<any>"PromiseRejectionEvent"] = preSpy;
-			const dispatchSpy = sinon.spy(() => false); // 'no-one called preventDefault'
+			const dispatchSpy = sinon.spy((...args: unknown[]) => false); // 'no-one called preventDefault'
 			global[<any>"dispatchEvent"] = dispatchSpy;
 			const reason = new Error("boom");
 			const promise = Promise.reject(reason);
@@ -121,9 +121,9 @@ describe("rejections", () => {
 			const warnSpy = sandbox.stub(console, "warn");
 			sandbox.stub(process, "emit").value(undefined);
 			const sentinel = { foo: "bar" };
-			const preSpy = sinon.spy(() => sentinel);
+			const preSpy = sinon.spy((...args: unknown[]) => sentinel);
 			global[<any>"PromiseRejectionEvent"] = preSpy;
-			const dispatchSpy = sinon.spy(() => true); // 'someone called preventDefault'
+			const dispatchSpy = sinon.spy((...args: unknown[]) => true); // 'someone called preventDefault'
 			global[<any>"dispatchEvent"] = dispatchSpy;
 			const reason = new Error("boom");
 			const promise = Promise.reject(reason);
@@ -177,7 +177,7 @@ describe("rejections", () => {
 		it("should emit event on process in Node and not log if not handled", () => {
 			const warnSpy = sandbox.stub(console, "warn");
 			process.removeAllListeners("rejectionHandled");
-			const emitSpy = sandbox.spy(process, "emit").withArgs("rejectionHandled");
+			const emitSpy = (sandbox.spy(process, "emit") as sinon.SinonSpy).withArgs("rejectionHandled");
 			const reason = new Error("boom");
 			const promise = Promise.reject(reason);
 			Promise.flush();
@@ -203,9 +203,9 @@ describe("rejections", () => {
 			const warnSpy = sandbox.stub(console, "warn");
 			sandbox.stub(process, "emit").value(undefined);
 			const sentinel = { foo: "bar" };
-			const preSpy = sinon.spy(() => sentinel);
+			const preSpy = sinon.spy((...args: unknown[]) => sentinel);
 			global[<any>"PromiseRejectionEvent"] = preSpy;
-			const dispatchSpy = sinon.spy(() => false); // 'no-one called preventDefault'
+			const dispatchSpy = sinon.spy((...args: unknown[]) => false); // 'no-one called preventDefault'
 			global[<any>"dispatchEvent"] = dispatchSpy;
 			const reason = new Error("boom");
 			const promise = Promise.reject(reason);
@@ -224,9 +224,9 @@ describe("rejections", () => {
 			const warnSpy = sandbox.stub(console, "warn");
 			sandbox.stub(process, "emit").value(undefined);
 			const sentinel = { foo: "bar" };
-			const preSpy = sinon.spy(() => sentinel);
+			const preSpy = sinon.spy((...args: unknown[]) => sentinel);
 			global[<any>"PromiseRejectionEvent"] = preSpy;
-			const dispatchSpy = sinon.spy(() => true); // 'someone called preventDefault'
+			const dispatchSpy = sinon.spy((...args: unknown[]) => true); // 'someone called preventDefault'
 			global[<any>"dispatchEvent"] = dispatchSpy;
 			const reason = new Error("boom");
 			const promise = Promise.reject(reason);
